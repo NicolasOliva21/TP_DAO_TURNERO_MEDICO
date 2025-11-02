@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}Turnero{% endblock %}</title>
+
+  <!-- Tailwind CDN (modo dev). Para prod podés compilarlo -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+  <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="h-full bg-slate-50">
+  <div class="min-h-screen grid grid-cols-[16rem_1fr]">
+    <!-- Sidebar -->
+    <aside class="bg-white border-r border-slate-200">
+      <div class="h-16 flex items-center px-4 text-xl font-bold text-blue-700">Turnero</div>
+      <nav class="px-2 space-y-1">
+        <a href="{{ url_for('dashboard.dashboard_view') }}" class="navlink">Dashboard</a>
+        <a href="{{ url_for('patients.index') }}" class="navlink">Pacientes</a>
+        <a href="{{ url_for('doctors.index') }}" class="navlink">Médicos</a>
+        <a href="{{ url_for('specialties.index') }}" class="navlink">Especialidades</a>
+        <a href="{{ url_for('appointments.index') }}" class="navlink">Turnos</a>
+        <a href="{{ url_for('reports.index') }}" class="navlink">Reportes</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <div class="flex flex-col">
+      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+        <div class="font-semibold">{% block header %}Sistema de Turnos Médicos{% endblock %}</div>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-slate-600">
+            Hola, {{ (session.get('user') or {}).get('name', 'Usuario') }}
+          </span>
+          <a href="{{ url_for('auth.logout') }}" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm">Salir</a>
+        </div>
+      </header>
+
+      <main class="p-6">
+        {% include '_flash.html' %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+</body>
+</html>

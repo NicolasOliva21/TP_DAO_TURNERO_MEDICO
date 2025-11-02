@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block header %}Turnos{% endblock %}
+
+{% block content %}
+<div class="card">
+  <form id="filters" class="grid md:grid-cols-5 gap-3"
+        hx-get="/turnos/_grid"
+        hx-target="#grid"
+        hx-swap="innerHTML"
+        hx-trigger="change, keyup delay:300ms from:#filters">
+    <!-- Médico -->
+    <div class="md:col-span-2">
+      <label class="lbl">Médico</label>
+      <select name="medico_id" class="input" required>
+        <option value="" selected disabled>Seleccioná un médico</option>
+        {% for m in medicos %}
+        <option value="{{ m.id }}">{{ m.apellido }}, {{ m.nombre }} ({{ m.matricula }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Fecha -->
+    <div>
+      <label class="lbl">Fecha</label>
+      <input type="date" name="fecha" class="input" required value="{{ (now or '') }}">
+    </div>
+
+    <!-- Duración -->
+    <div>
+      <label class="lbl">Duración (min)</label>
+      <select name="duracion_min" class="input">
+        <option value="15">15</option>
+        <option value="20">20</option>
+        <option value="30" selected>30</option>
+        <option value="45">45</option>
+        <option value="60">60</option>
+      </select>
+    </div>
+
+    <!-- Ventana laboral -->
+    <div class="md:col-span-5 grid grid-cols-2 gap-3">
+      <div>
+        <label class="lbl">Inicio jornada</label>
+        <input type="time" name="inicio" class="input" value="09:00">
+      </div>
+      <div>
+        <label class="lbl">Fin jornada</label>
+        <input type="time" name="fin" class="input" value="17:00">
+      </div>
+    </div>
+
+    <div class="md:col-span-5">
+      <div class="text-sm text-slate-500">La grilla muestra <strong>solo horarios disponibles</strong>. Los ocupados no aparecen.</div>
+    </div>
+  </form>
+</div>
+
+<!-- Grilla -->
+<div id="grid" class="mt-4" hx-get="/turnos/_grid" hx-target="#grid" hx-swap="innerHTML" hx-trigger="load">
+  <!-- contenido parcial -->
+</div>
+{% endblock %}

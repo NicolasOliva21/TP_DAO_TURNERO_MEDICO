@@ -1,0 +1,46 @@
+<form hx-post="/pacientes/crear" hx-target="#patients-table" hx-swap="outerHTML">
+  {% if error %}
+  <div class="alert-error mb-3">{{ error }}</div>
+  {% endif %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div>
+      <label class="lbl">Nombre</label>
+      <input name="nombre" class="input" required value="{{ (values or {}).get('nombre','') }}">
+    </div>
+    <div>
+      <label class="lbl">Apellido</label>
+      <input name="apellido" class="input" required value="{{ (values or {}).get('apellido','') }}">
+    </div>
+    <div>
+      <label class="lbl">DNI</label>
+      <input name="dni" class="input" required value="{{ (values or {}).get('dni','') }}">
+    </div>
+    <div>
+      <label class="lbl">Fecha de nacimiento</label>
+      <input name="fecha_nacimiento" type="date" class="input" required value="{{ (values or {}).get('fecha_nacimiento','') }}">
+    </div>
+    <div>
+      <label class="lbl">Dirección</label>
+      <input name="direccion" class="input" value="{{ (values or {}).get('direccion','') }}">
+    </div>
+    <div>
+      <label class="lbl">Teléfono</label>
+      <input name="telefono" class="input" value="{{ (values or {}).get('telefono','') }}">
+    </div>
+    <div class="md:col-span-2">
+      <label class="lbl">Email</label>
+      <input name="email" type="email" class="input" value="{{ (values or {}).get('email','') }}">
+    </div>
+    <div>
+      <label class="lbl">Obra social</label>
+      <input name="obra_social" class="input" value="{{ (values or {}).get('obra_social','') }}">
+    </div>
+    <div>
+      <label class="lbl">Nro. afiliado</label>
+      <input name="nro_afiliado" class="input" value="{{ (values or {}).get('nro_afiliado','') }}">
+    </div>
+  </div>
+  <div class="mt-4 text-right">
+    <button class="btn-primary">Guardar</button>
+  </div>
+</form>

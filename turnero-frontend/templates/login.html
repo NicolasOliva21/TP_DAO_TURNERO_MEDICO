@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Ingresar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-full grid place-items-center bg-slate-50">
+  <form action="/login" method="post" class="w-full max-w-sm bg-white p-6 rounded-2xl shadow">
+    <h1 class="text-xl font-semibold mb-4">Ingresar</h1>
+    {% include '_flash.html' %}
+    <label class="block text-sm mb-2">Email</label>
+    <input name="email" type="email" required class="input" placeholder="usuario@ejemplo.com"/>
+    <label class="block text-sm mt-4 mb-2">Contraseña</label>
+    <input name="password" type="password" required class="input" placeholder="••••••"/>
+    <button class="btn-primary w-full mt-6">Entrar</button>
+  </form>
+</body>
+</html>

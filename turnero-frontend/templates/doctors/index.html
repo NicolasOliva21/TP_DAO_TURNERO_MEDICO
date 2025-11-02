@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block header %}Médicos{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-lg font-semibold">Listado</h2>
+  <button class="btn-primary"
+          hx-get="/medicos/_form"
+          hx-target="#modal-body"
+          hx-swap="innerHTML"
+          onclick="openModal()">Nuevo médico</button>
+</div>
+
+<div id="doctors-table" hx-get="/medicos/_table" hx-trigger="load">
+  <!-- table partial -->
+</div>
+
+<!-- Modal simple -->
+<div id="modal" class="hidden fixed inset-0 bg-black/30 z-50 items-center justify-center">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+    <div id="modal-body"></div>
+    <div class="mt-4 text-right">
+      <button class="btn" onclick="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
