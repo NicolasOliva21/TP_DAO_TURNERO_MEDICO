@@ -1,7 +1,7 @@
-function openModal(){ document.getElementById('modal').classList.remove('hidden'); document.getElementById('modal').classList.add('flex'); }
-function closeModal(){ document.getElementById('modal').classList.add('hidden'); document.getElementById('modal').classList.remove('flex'); }
+function openModal(){ const m=document.getElementById('modal'); m.classList.add('open'); }
+function closeModal(){ const m=document.getElementById('modal'); m.classList.remove('open'); }
 window.openModal = openModal; window.closeModal = closeModal;
+
 document.addEventListener('htmx:afterSwap', (e) => {
-  // Cerrar modal si se reemplazó la tabla (creación OK)
-  if (e.detail.target && e.detail.target.id === 'patients-table') closeModal();
+  if (e.detail.target && (e.detail.target.id === 'patients-table' || e.detail.target.id === 'doctors-table')) closeModal();
 });

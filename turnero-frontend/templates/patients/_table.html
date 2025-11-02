@@ -1,40 +1,26 @@
-<div class="overflow-auto rounded-xl border border-slate-200 bg-white">
-  <table class="min-w-full text-sm">
-    <thead class="bg-slate-50">
+<div class="card">
+  <table class="table">
+    <thead>
       <tr>
-        <th class="th">Nombre</th>
-        <th class="th">Apellido</th>
-        <th class="th">DNI</th>
-        <th class="th">Email</th>
-        <th class="th">Teléfono</th>
-        <th class="th">Estado</th>
-        <th class="th"></th>
+        <th>Nombre</th><th>Apellido</th><th>DNI</th><th>Email</th><th>Teléfono</th><th>Estado</th><th></th>
       </tr>
     </thead>
     <tbody>
       {% for p in pacientes %}
-      <tr class="border-t">
-        <td class="td">{{ p.nombre }}</td>
-        <td class="td">{{ p.apellido }}</td>
-        <td class="td">{{ p.dni }}</td>
-        <td class="td">{{ p.email }}</td>
-        <td class="td">{{ p.telefono }}</td>
-        <td class="td">
-          {% if p.activo %}<span class="badge-success">Activo</span>
-          {% else %}<span class="badge-muted">Inactivo</span>{% endif %}
-        </td>
-        <td class="td text-right">
-          <button class="btn"
-                  hx-post="/pacientes/toggle/{{ p.id }}"
-                  hx-vals='{"activo":"{{ "false" if p.activo else "true" }}"}'
-                  hx-target="#patients-table"
-                  hx-swap="outerHTML">
-            {{ "Desactivar" if p.activo else "Activar" }}
-          </button>
+      <tr>
+        <td>{{ p.nombre }}</td>
+        <td>{{ p.apellido }}</td>
+        <td>{{ p.dni }}</td>
+        <td>{{ p.email }}</td>
+        <td>{{ p.telefono }}</td>
+        <td>{% if p.activo %}<span class="badge badge-success">Activo</span>{% else %}<span class="badge badge-muted">Inactivo</span>{% endif %}</td>
+        <td class="text-right">
+          <button class="btn" hx-post="/pacientes/toggle/{{ p.id }}" hx-vals='{"activo":"{{ "false" if p.activo else "true" }}"}'
+                  hx-target="#patients-table" hx-swap="outerHTML"> {{ "Desactivar" if p.activo else "Activar" }} </button>
         </td>
       </tr>
       {% else %}
-      <tr><td class="td text-center" colspan="7">Sin datos</td></tr>
+      <tr><td colspan="7" class="text-center text-slate-500 py-6">Sin datos</td></tr>
       {% endfor %}
     </tbody>
   </table>
