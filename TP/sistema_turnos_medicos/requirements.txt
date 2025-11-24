@@ -1,0 +1,14 @@
+# Dependencias del Sistema de Turnos Médicos
+# Python >= 3.10
+
+# Persistencia
+sqlalchemy>=2.0.0
+
+# Validaciones
+pydantic>=2.5.0
+email-validator
+python-dateutil
+
+# FastAPI y servidor web
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0

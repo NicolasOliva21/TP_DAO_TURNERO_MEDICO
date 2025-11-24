@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Turnos Médicos</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-hospital"></i>
+                    <span>Sistema de Turnos Médicos</span>
+                </div>
+                <nav class="nav">
+                    <button class="nav-btn active" data-page="home">
+                        <i class="fas fa-home"></i>
+                        <span>Inicio</span>
+                    </button>
+                    <button class="nav-btn" data-page="turnos">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Reservar Turno</span>
+                    </button>
+                    <button class="nav-btn" data-page="mis-turnos">
+                        <i class="fas fa-list"></i>
+                        <span>Mis Turnos</span>
+                    </button>
+                    <button class="nav-btn" data-page="pacientes">
+                        <i class="fas fa-users"></i>
+                        <span>Pacientes</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Page -->
+        <section id="home-page" class="page active">
+            <div class="container">
+                <div class="hero">
+                    <h1>Bienvenido al Sistema de Turnos Médicos</h1>
+                    <p>Gestiona tus consultas médicas de manera simple y eficiente</p>
+                    <button class="btn btn-primary btn-large" onclick="navigateTo('turnos')">
+                        <i class="fas fa-calendar-plus"></i>
+                        Reservar Turno Ahora
+                    </button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-user-md"></i>
+                        <div class="stat-info">
+                            <h3 id="stat-medicos">-</h3>
+                            <p>Médicos Disponibles</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-stethoscope"></i>
+                        <div class="stat-info">
+                            <h3 id="stat-especialidades">-</h3>
+                            <p>Especialidades</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div class="stat-info">
+                            <h3 id="stat-turnos">-</h3>
+                            <p>Turnos Activos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <div class="stat-info">
+                            <h3 id="stat-pacientes">-</h3>
+                            <p>Pacientes Registrados</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h2>¿Cómo funciona?</h2>
+                    <div class="steps-grid">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <h3>Registrate o Ingresa</h3>
+                            <p>Completa tus datos personales o busca tu DNI si ya eres paciente</p>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <h3>Selecciona Especialidad</h3>
+                            <p>Elige la especialidad médica que necesitas</p>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <h3>Elige Médico y Horario</h3>
+                            <p>Selecciona el profesional y el horario que mejor te convenga</p>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-number">4</div>
+                            <h3>Confirma tu Turno</h3>
+                            <p>Revisa los datos y confirma tu reserva</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Turnos Page -->
+        <section id="turnos-page" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1><i class="fas fa-calendar-check"></i> Reservar Turno Médico</h1>
+                    <p>Complete los siguientes pasos para reservar su turno</p>
+                </div>
+
+                <!-- Stepper -->
+                <div class="stepper">
+                    <div class="step active" data-step="1">
+                        <div class="step-circle">1</div>
+                        <span>Paciente</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="2">
+                        <div class="step-circle">2</div>
+                        <span>Especialidad</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="3">
+                        <div class="step-circle">3</div>
+                        <span>Médico</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="4">
+                        <div class="step-circle">4</div>
+                        <span>Horario</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="5">
+                        <div class="step-circle">5</div>
+                        <span>Confirmar</span>
+                    </div>
+                </div>
+
+                <!-- Step 1: Paciente -->
+                <div class="step-content active" id="step-1">
+                    <div class="card">
+                        <h2>Datos del Paciente</h2>
+                        
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="buscar-paciente">
+                                <i class="fas fa-search"></i> Buscar Paciente
+                            </button>
+                            <button class="tab-btn" data-tab="nuevo-paciente">
+                                <i class="fas fa-user-plus"></i> Nuevo Paciente
+                            </button>
+                        </div>
+
+                        <!-- Buscar Paciente -->
+                        <div class="tab-content active" id="buscar-paciente">
+                            <div class="form-group">
+                                <label for="buscar-dni">DNI del Paciente</label>
+                                <div class="input-with-button">
+                                    <input type="text" id="buscar-dni" placeholder="Ingrese DNI (sin puntos)" maxlength="10">
+                                    <button class="btn btn-secondary" onclick="buscarPaciente()">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="paciente-encontrado" class="paciente-info" style="display: none;">
+                                <div class="success-message">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Paciente encontrado</span>
+                                </div>
+                                <div class="info-grid">
+                                    <div><strong>Nombre:</strong> <span id="pac-nombre"></span></div>
+                                    <div><strong>DNI:</strong> <span id="pac-dni"></span></div>
+                                    <div><strong>Email:</strong> <span id="pac-email"></span></div>
+                                    <div><strong>Teléfono:</strong> <span id="pac-telefono"></span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nuevo Paciente -->
+                        <div class="tab-content" id="nuevo-paciente">
+                            <form id="form-nuevo-paciente">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="pac-nuevo-dni">DNI *</label>
+                                        <input type="text" id="pac-nuevo-dni" required maxlength="10">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pac-nombre-input">Nombre *</label>
+                                        <input type="text" id="pac-nombre-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pac-apellido">Apellido *</label>
+                                        <input type="text" id="pac-apellido" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="pac-email-input">Email *</label>
+                                        <input type="email" id="pac-email-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pac-telefono-input">Teléfono *</label>
+                                        <input type="tel" id="pac-telefono-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pac-fecha-nacimiento">Fecha de Nacimiento *</label>
+                                        <input type="date" id="pac-fecha-nacimiento" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="pac-direccion">Dirección *</label>
+                                        <input type="text" id="pac-direccion" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="pac-obra-social">Obra Social</label>
+                                        <input type="text" id="pac-obra-social">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pac-numero-afiliado">Número de Afiliado</label>
+                                        <input type="text" id="pac-numero-afiliado">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Registrar Paciente
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="step-actions">
+                            <button class="btn btn-primary" onclick="nextStep(2)" id="btn-step-1">
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Especialidad -->
+                <div class="step-content" id="step-2">
+                    <div class="card">
+                        <h2>Seleccione una Especialidad</h2>
+                        <div id="especialidades-grid" class="especialidades-grid">
+                            <!-- Se carga dinámicamente -->
+                        </div>
+                        <div class="step-actions">
+                            <button class="btn btn-secondary" onclick="prevStep(1)">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="btn btn-primary" onclick="nextStep(3)" id="btn-step-2" disabled>
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Médico -->
+                <div class="step-content" id="step-3">
+                    <div class="card">
+                        <h2>Seleccione un Médico</h2>
+                        <div id="medicos-list" class="medicos-list">
+                            <!-- Se carga dinámicamente -->
+                        </div>
+                        <div class="step-actions">
+                            <button class="btn btn-secondary" onclick="prevStep(2)">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="btn btn-primary" onclick="nextStep(4)" id="btn-step-3" disabled>
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Horario -->
+                <div class="step-content" id="step-4">
+                    <div class="card">
+                        <h2>Seleccione Fecha y Horario</h2>
+                        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                            Haga clic en cualquier horario disponible para reservar
+                        </p>
+                        <div id="calendario-turnos" class="calendario-turnos">
+                            <!-- Se carga dinámicamente -->
+                        </div>
+                        <div class="step-actions">
+                            <button class="btn btn-secondary" onclick="prevStep(3)">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="btn btn-primary" onclick="nextStep(5)" id="btn-step-4" disabled>
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Confirmar -->
+                <div class="step-content" id="step-5">
+                    <div class="card">
+                        <h2>Confirmar Reserva</h2>
+                        <div class="resumen-turno">
+                            <div class="resumen-item">
+                                <i class="fas fa-user"></i>
+                                <div>
+                                    <strong>Paciente</strong>
+                                    <p id="resumen-paciente">-</p>
+                                </div>
+                            </div>
+                            <div class="resumen-item">
+                                <i class="fas fa-stethoscope"></i>
+                                <div>
+                                    <strong>Especialidad</strong>
+                                    <p id="resumen-especialidad">-</p>
+                                </div>
+                            </div>
+                            <div class="resumen-item">
+                                <i class="fas fa-user-md"></i>
+                                <div>
+                                    <strong>Médico</strong>
+                                    <p id="resumen-medico">-</p>
+                                </div>
+                            </div>
+                            <div class="resumen-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <div>
+                                    <strong>Fecha y Hora</strong>
+                                    <p id="resumen-fecha-hora">-</p>
+                                </div>
+                            </div>
+                            <div class="resumen-item">
+                                <i class="fas fa-clock"></i>
+                                <div>
+                                    <strong>Duración</strong>
+                                    <p id="resumen-duracion">30 minutos</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="turno-motivo">Motivo de la Consulta (opcional)</label>
+                            <textarea id="turno-motivo" rows="3" placeholder="Describa brevemente el motivo de su consulta"></textarea>
+                        </div>
+
+                        <div class="step-actions">
+                            <button class="btn btn-secondary" onclick="prevStep(4)">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="btn btn-success btn-large" onclick="confirmarTurno()">
+                                <i class="fas fa-check"></i> Confirmar Turno
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mis Turnos Page -->
+        <section id="mis-turnos-page" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1><i class="fas fa-list"></i> Mis Turnos</h1>
+                    <p>Consulta y gestiona tus turnos médicos</p>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label for="buscar-turnos-dni">Buscar turnos por DNI</label>
+                        <div class="input-with-button">
+                            <input type="text" id="buscar-turnos-dni" placeholder="Ingrese DNI del paciente">
+                            <button class="btn btn-primary" onclick="buscarTurnosPaciente()">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="turnos-list" class="turnos-list">
+                        <!-- Se carga dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pacientes Page -->
+        <section id="pacientes-page" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1><i class="fas fa-users"></i> Gestión de Pacientes</h1>
+                    <p>Listado de pacientes registrados</p>
+                </div>
+
+                <div class="card">
+                    <div class="table-header">
+                        <button class="btn btn-primary" onclick="navegarRegistrarPaciente()">
+                            <i class="fas fa-user-plus"></i> Nuevo Paciente
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="pacientes-table">
+                            <thead>
+                                <tr>
+                                    <th>DNI</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Fecha Nacimiento</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pacientes-tbody">
+                                <!-- Se carga dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Cargando...</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

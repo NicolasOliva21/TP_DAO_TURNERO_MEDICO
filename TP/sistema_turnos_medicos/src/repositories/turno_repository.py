@@ -1,0 +1,262 @@
+"""Repositorio para la entidad Turno."""
+from datetime import date, datetime
+from typing import List, Optional
+
+from sqlalchemy import and_, or_, select
+from sqlalchemy.orm import Session, joinedload
+
+from src.domain.turno import Turno
+from src.repositories.base_repository import BaseRepository
+
+
+class TurnoRepository(BaseRepository[Turno]):
+    """Repositorio específico para Turnos."""
+
+    def __init__(self, session: Session):
+        super().__init__(session, Turno)
+
+    def get_by_id_completo(self, turno_id: int) -> Optional[Turno]:
+        """Obtiene turno por ID con todas las relaciones cargadas."""
+        stmt = select(Turno).options(
+            joinedload(Turno.paciente),
+            joinedload(Turno.medico),
+            joinedload(Turno.especialidad),
+            joinedload(Turno.estado)
+        ).where(
+            Turno.id == turno_id,
+            Turno.activo == True  # noqa: E712
+        )
+        return self.session.scalar(stmt)
+
+    def get_por_medico(
+        self,
+        medico_id: int,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None,
+        solo_activos: bool = True
+    ) -> List[Turno]:
+        """
+        Obtiene turnos de un médico en un rango de fechas.
+        
+        Args:
+            medico_id: ID del médico
+            fecha_desde: Fecha inicial (opcional)
+            fecha_hasta: Fecha final (opcional)
+            solo_activos: Si es True, solo estados PEND, CONF, ASIS
+        
+        Returns:
+            Lista de turnos
+        """
+        stmt = select(Turno).options(
+            joinedload(Turno.paciente),
+            joinedload(Turno.especialidad),
+            joinedload(Turno.estado)
+        ).where(
+            Turno.id_medico == medico_id,
+            Turno.activo == True  # noqa: E712
+        )
+        
+        if fecha_desde:
+            stmt = stmt.where(Turno.fecha_hora >= datetime.combine(fecha_desde, datetime.min.time()))
+        
+        if fecha_hasta:
+            stmt = stmt.where(Turno.fecha_hora <= datetime.combine(fecha_hasta, datetime.max.time()))
+        
+        if solo_activos:
+            # Estados activos: PEND, CONF, ASIS
+            stmt = stmt.join(Turno.estado).where(
+                Turno.estado.has(codigo=or_("PEND", "CONF", "ASIS"))
+            )
+        
+        stmt = stmt.order_by(Turno.fecha_hora)
+        return list(self.session.scalars(stmt).unique().all())
+
+    def get_por_paciente(
+        self,
+        paciente_id: int,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None
+    ) -> List[Turno]:
+        """
+        Obtiene turnos de un paciente en un rango de fechas.
+        
+        Args:
+            paciente_id: ID del paciente
+            fecha_desde: Fecha inicial (opcional)
+            fecha_hasta: Fecha final (opcional)
+        
+        Returns:
+            Lista de turnos
+        """
+        stmt = select(Turno).options(
+            joinedload(Turno.medico),
+            joinedload(Turno.especialidad),
+            joinedload(Turno.estado)
+        ).where(
+            Turno.id_paciente == paciente_id,
+            Turno.activo == True  # noqa: E712
+        )
+        
+        if fecha_desde:
+            stmt = stmt.where(Turno.fecha_hora >= datetime.combine(fecha_desde, datetime.min.time()))
+        
+        if fecha_hasta:
+            stmt = stmt.where(Turno.fecha_hora <= datetime.combine(fecha_hasta, datetime.max.time()))
+        
+        stmt = stmt.order_by(Turno.fecha_hora.desc())
+        return list(self.session.scalars(stmt).unique().all())
+
+    def get_por_medico_y_fecha(
+        self,
+        medico_id: int,
+        fecha: date
+    ) -> List[Turno]:
+        """
+        Obtiene todos los turnos de un médico para una fecha específica.
+        
+        Args:
+            medico_id: ID del médico
+            fecha: Fecha a buscar
+        
+        Returns:
+            Lista de turnos del médico en esa fecha
+        """
+        fecha_inicio = datetime.combine(fecha, datetime.min.time())
+        fecha_fin = datetime.combine(fecha, datetime.max.time())
+        
+        stmt = select(Turno).where(
+            Turno.id_medico == medico_id,
+            Turno.fecha_hora >= fecha_inicio,
+            Turno.fecha_hora <= fecha_fin,
+            Turno.activo == True  # noqa: E712
+        ).order_by(Turno.fecha_hora)
+        
+        return list(self.session.scalars(stmt).all())
+
+    def get_por_especialidad(
+        self,
+        especialidad_id: int,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None
+    ) -> List[Turno]:
+        """Obtiene turnos por especialidad en un rango de fechas."""
+        stmt = select(Turno).options(
+            joinedload(Turno.paciente),
+            joinedload(Turno.medico),
+            joinedload(Turno.estado)
+        ).where(
+            Turno.id_especialidad == especialidad_id,
+            Turno.activo == True  # noqa: E712
+        )
+        
+        if fecha_desde:
+            stmt = stmt.where(Turno.fecha_hora >= datetime.combine(fecha_desde, datetime.min.time()))
+        
+        if fecha_hasta:
+            stmt = stmt.where(Turno.fecha_hora <= datetime.combine(fecha_hasta, datetime.max.time()))
+        
+        stmt = stmt.order_by(Turno.fecha_hora)
+        return list(self.session.scalars(stmt).unique().all())
+
+    def verificar_solapamiento_medico(
+        self,
+        medico_id: int,
+        fecha_hora_inicio: datetime,
+        fecha_hora_fin: datetime,
+        exclude_turno_id: Optional[int] = None
+    ) -> bool:
+        """
+        Verifica si hay turnos del médico que se solapen con el horario dado.
+        
+        Args:
+            medico_id: ID del médico
+            fecha_hora_inicio: Inicio del turno a verificar
+            fecha_hora_fin: Fin del turno a verificar
+            exclude_turno_id: ID de turno a excluir (útil para modificaciones)
+        
+        Returns:
+            True si hay solapamiento, False en caso contrario
+        """
+        stmt = select(Turno).join(Turno.estado).where(
+            Turno.id_medico == medico_id,
+            Turno.activo == True,  # noqa: E712
+            # Estados activos que importan para solapamiento
+            Turno.estado.has(codigo=or_("PEND", "CONF", "ASIS")),
+            # Lógica de solapamiento de intervalos
+            and_(
+                Turno.fecha_hora < fecha_hora_fin,
+                Turno.fecha_hora_fin > fecha_hora_inicio
+            )
+        )
+        
+        if exclude_turno_id is not None:
+            stmt = stmt.where(Turno.id != exclude_turno_id)
+        
+        return self.session.scalar(stmt) is not None
+
+    def verificar_solapamiento_paciente(
+        self,
+        paciente_id: int,
+        fecha_hora_inicio: datetime,
+        fecha_hora_fin: datetime,
+        exclude_turno_id: Optional[int] = None
+    ) -> bool:
+        """
+        Verifica si el paciente tiene turnos que se solapen con el horario dado.
+        
+        Args:
+            paciente_id: ID del paciente
+            fecha_hora_inicio: Inicio del turno a verificar
+            fecha_hora_fin: Fin del turno a verificar
+            exclude_turno_id: ID de turno a excluir (útil para modificaciones)
+        
+        Returns:
+            True si hay solapamiento, False en caso contrario
+        """
+        stmt = select(Turno).join(Turno.estado).where(
+            Turno.id_paciente == paciente_id,
+            Turno.activo == True,  # noqa: E712
+            Turno.estado.has(codigo=or_("PEND", "CONF", "ASIS")),
+            and_(
+                Turno.fecha_hora < fecha_hora_fin,
+                Turno.fecha_hora_fin > fecha_hora_inicio
+            )
+        )
+        
+        if exclude_turno_id is not None:
+            stmt = stmt.where(Turno.id != exclude_turno_id)
+        
+        return self.session.scalar(stmt) is not None
+
+    def contar_por_estado(
+        self,
+        fecha_desde: Optional[date] = None,
+        fecha_hasta: Optional[date] = None
+    ) -> dict:
+        """
+        Cuenta turnos agrupados por estado en un rango de fechas.
+        
+        Returns:
+            Diccionario con código de estado como clave y cantidad como valor
+        """
+        stmt = select(Turno).options(
+            joinedload(Turno.estado)
+        ).where(
+            Turno.activo == True  # noqa: E712
+        )
+        
+        if fecha_desde:
+            stmt = stmt.where(Turno.fecha_hora >= datetime.combine(fecha_desde, datetime.min.time()))
+        
+        if fecha_hasta:
+            stmt = stmt.where(Turno.fecha_hora <= datetime.combine(fecha_hasta, datetime.max.time()))
+        
+        turnos = list(self.session.scalars(stmt).all())
+        
+        # Contar por estado
+        conteo = {}
+        for turno in turnos:
+            codigo = turno.estado.codigo
+            conteo[codigo] = conteo.get(codigo, 0) + 1
+        
+        return conteo
