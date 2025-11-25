@@ -32,23 +32,32 @@ def listar_turnos(
     Lista turnos con filtros opcionales.
     Útil para ver la agenda completa o filtrada.
     """
-    # Aplicar filtros básicos
-    query = uow.session.query(uow.turnos.model)
+    from sqlalchemy.orm import joinedload
+    from src.domain.turno import Turno
+    from src.domain.medico import Medico
+    
+    # Aplicar filtros básicos con eager loading
+    query = uow.session.query(Turno).options(
+        joinedload(Turno.paciente),
+        joinedload(Turno.medico).joinedload(Medico.especialidades),
+        joinedload(Turno.especialidad),
+        joinedload(Turno.estado)
+    )
     
     if fecha_desde:
-        query = query.filter(uow.turnos.model.fecha_hora >= fecha_desde)
+        query = query.filter(Turno.fecha_hora >= fecha_desde)
     if fecha_hasta:
-        query = query.filter(uow.turnos.model.fecha_hora <= fecha_hasta)
+        query = query.filter(Turno.fecha_hora <= fecha_hasta)
     if id_paciente:
-        query = query.filter(uow.turnos.model.id_paciente == id_paciente)
+        query = query.filter(Turno.id_paciente == id_paciente)
     if id_medico:
-        query = query.filter(uow.turnos.model.id_medico == id_medico)
+        query = query.filter(Turno.id_medico == id_medico)
     if codigo_estado:
         estado = uow.estados_turno.get_by_codigo(codigo_estado)
         if estado:
-            query = query.filter(uow.turnos.model.id_estado == estado.id)
+            query = query.filter(Turno.id_estado == estado.id)
     
-    query = query.filter(uow.turnos.model.activo == True)
+    query = query.filter(Turno.activo == True)
     turnos = query.offset(skip).limit(limit).all()
     
     return turnos
@@ -71,11 +80,7 @@ def obtener_turnos_paciente(
     if solo_futuros:
         turnos = uow.turnos.get_turnos_futuros_paciente(paciente_id)
     else:
-        query = uow.session.query(uow.turnos.model).filter(
-            uow.turnos.model.id_paciente == paciente_id,
-            uow.turnos.model.activo == True
-        )
-        turnos = query.all()
+        turnos = uow.turnos.get_por_paciente(paciente_id)
     
     return turnos
 
@@ -87,6 +92,10 @@ def obtener_turnos_medico(
     uow: UnitOfWork = Depends(get_uow)
 ):
     """Obtiene todos los turnos de un médico, opcionalmente para una fecha específica."""
+    from sqlalchemy.orm import joinedload
+    from src.domain.turno import Turno
+    from src.domain.medico import Medico
+    
     medico = uow.medicos.get_by_id(medico_id)
     if not medico:
         raise HTTPException(
@@ -94,15 +103,27 @@ def obtener_turnos_medico(
             detail=f"Médico con ID {medico_id} no encontrado"
         )
     
-    if fecha:
-        turnos = uow.turnos.get_turnos_medico_fecha(medico_id, fecha)
-    else:
-        query = uow.session.query(uow.turnos.model).filter(
-            uow.turnos.model.id_medico == medico_id,
-            uow.turnos.model.activo == True
-        )
-        turnos = query.all()
+    # Query con eager loading de relaciones
+    query = uow.session.query(Turno).filter(
+        Turno.id_medico == medico_id,
+        Turno.activo == True
+    ).options(
+        joinedload(Turno.paciente),
+        joinedload(Turno.medico).joinedload(Medico.especialidades),
+        joinedload(Turno.especialidad),
+        joinedload(Turno.estado)
+    )
     
+    if fecha:
+        # Filtrar por fecha específica
+        fecha_inicio = datetime.combine(fecha, datetime.min.time())
+        fecha_fin = datetime.combine(fecha, datetime.max.time())
+        query = query.filter(
+            Turno.fecha_hora >= fecha_inicio,
+            Turno.fecha_hora <= fecha_fin
+        )
+    
+    turnos = query.all()
     return turnos
 
 
@@ -209,25 +230,25 @@ def crear_turno(
         turno_service = TurnoService(uow)
         
         turno = turno_service.crear_turno(
-            id_paciente=turno_data.id_paciente,
-            id_medico=turno_data.id_medico,
-            id_especialidad=turno_data.id_especialidad,
+            paciente_id=turno_data.id_paciente,
+            medico_id=turno_data.id_medico,
+            especialidad_id=turno_data.id_especialidad,
             fecha_hora=turno_data.fecha_hora,
             duracion_minutos=turno_data.duracion_minutos,
-            motivo=turno_data.motivo
+            observaciones=turno_data.motivo
         )
         
         uow.commit()
-        return turno
+        
+        # Recargar el turno con todas las relaciones para la respuesta
+        turno_completo = uow.turnos.get_by_id_completo(turno.id)
+        return turno_completo
         
     except (
-        FechaPasadaException,
         DisponibilidadException,
-        SolapamientoTurnoException,
-        EspecialidadInvalidaException,
-        PacienteNoEncontradoException,
-        MedicoNoEncontradoException,
-        EspecialidadNoEncontradaException
+        TurnoSolapamientoException,
+        ValidationException,
+        EntityNotFoundException
     ) as e:
         uow.rollback()
         raise HTTPException(
@@ -296,7 +317,15 @@ def confirmar_turno(
                 detail=f"Turno con ID {turno_id} no encontrado"
             )
         
-        turno.confirmar()
+        # Obtener estado CONFIRMADO
+        estado_conf = uow.estados_turno.get_by_codigo("CONF")
+        if not estado_conf:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Estado CONFIRMADO no encontrado en el sistema"
+            )
+        
+        turno.id_estado = estado_conf.id
         uow.commit()
         
         return SuccessResponse(message="Turno confirmado exitosamente")
@@ -323,17 +352,19 @@ def cancelar_turno(
                 detail=f"Turno con ID {turno_id} no encontrado"
             )
         
-        turno.cancelar()
+        # Obtener estado CANCELADO
+        estado_canc = uow.estados_turno.get_by_codigo("CANC")
+        if not estado_canc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Estado CANCELADO no encontrado en el sistema"
+            )
+        
+        turno.id_estado = estado_canc.id
         uow.commit()
         
         return SuccessResponse(message="Turno cancelado exitosamente")
         
-    except TurnoCanceladoException as e:
-        uow.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
     except Exception as e:
         uow.rollback()
         raise HTTPException(

@@ -169,9 +169,15 @@ class TurnoCreate(BaseModel):
     @field_validator('fecha_hora')
     @classmethod
     def validar_fecha_futura(cls, v: datetime) -> datetime:
-        """Valida que la fecha sea futura."""
-        if v <= datetime.now():
-            raise ValueError("La fecha del turno debe ser futura")
+        """Valida que la fecha no sea del pasado."""
+        # Permitir fechas de hoy y futuras
+        # Comparar solo la fecha sin hora para evitar problemas de timezone
+        hoy = datetime.now().date()
+        fecha_turno = v.date()
+        
+        if fecha_turno < hoy:
+            raise ValueError("La fecha del turno no puede ser del pasado")
+        
         return v
 
 

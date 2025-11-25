@@ -26,7 +26,7 @@ class EstadoTurnoRepository(BaseRepository[EstadoTurno]):
         """
         stmt = select(EstadoTurno).where(
             EstadoTurno.codigo == codigo,
-            EstadoTurno.activo == True  # noqa: E712
+            EstadoTurno.activo.is_(True)
         )
         return self.session.scalar(stmt)
 

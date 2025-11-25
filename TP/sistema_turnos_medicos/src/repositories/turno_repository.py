@@ -1,8 +1,8 @@
 """Repositorio para la entidad Turno."""
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, String
 from sqlalchemy.orm import Session, joinedload
 
 from src.domain.turno import Turno
@@ -24,7 +24,7 @@ class TurnoRepository(BaseRepository[Turno]):
             joinedload(Turno.estado)
         ).where(
             Turno.id == turno_id,
-            Turno.activo == True  # noqa: E712
+            Turno.activo.is_(True)
         )
         return self.session.scalar(stmt)
 
@@ -53,7 +53,7 @@ class TurnoRepository(BaseRepository[Turno]):
             joinedload(Turno.estado)
         ).where(
             Turno.id_medico == medico_id,
-            Turno.activo == True  # noqa: E712
+            Turno.activo.is_(True)
         )
         
         if fecha_desde:
@@ -64,8 +64,9 @@ class TurnoRepository(BaseRepository[Turno]):
         
         if solo_activos:
             # Estados activos: PEND, CONF, ASIS
+            from src.domain.estado_turno import EstadoTurno
             stmt = stmt.join(Turno.estado).where(
-                Turno.estado.has(codigo=or_("PEND", "CONF", "ASIS"))
+                EstadoTurno.codigo.in_(["PEND", "CONF", "ASIS"])
             )
         
         stmt = stmt.order_by(Turno.fecha_hora)
@@ -94,7 +95,7 @@ class TurnoRepository(BaseRepository[Turno]):
             joinedload(Turno.estado)
         ).where(
             Turno.id_paciente == paciente_id,
-            Turno.activo == True  # noqa: E712
+            Turno.activo.is_(True)
         )
         
         if fecha_desde:
@@ -128,7 +129,7 @@ class TurnoRepository(BaseRepository[Turno]):
             Turno.id_medico == medico_id,
             Turno.fecha_hora >= fecha_inicio,
             Turno.fecha_hora <= fecha_fin,
-            Turno.activo == True  # noqa: E712
+            Turno.activo.is_(True)
         ).order_by(Turno.fecha_hora)
         
         return list(self.session.scalars(stmt).all())
@@ -146,7 +147,7 @@ class TurnoRepository(BaseRepository[Turno]):
             joinedload(Turno.estado)
         ).where(
             Turno.id_especialidad == especialidad_id,
-            Turno.activo == True  # noqa: E712
+            Turno.activo.is_(True)
         )
         
         if fecha_desde:
@@ -177,22 +178,30 @@ class TurnoRepository(BaseRepository[Turno]):
         Returns:
             True si hay solapamiento, False en caso contrario
         """
+        from src.domain.estado_turno import EstadoTurno
+        
+        # Obtener todos los turnos activos del médico en el día
+        fecha_dia = fecha_hora_inicio.date()
         stmt = select(Turno).join(Turno.estado).where(
             Turno.id_medico == medico_id,
-            Turno.activo == True,  # noqa: E712
-            # Estados activos que importan para solapamiento
-            Turno.estado.has(codigo=or_("PEND", "CONF", "ASIS")),
-            # Lógica de solapamiento de intervalos
-            and_(
-                Turno.fecha_hora < fecha_hora_fin,
-                Turno.fecha_hora_fin > fecha_hora_inicio
-            )
+            Turno.activo.is_(True),
+            EstadoTurno.codigo.in_(["PEND", "CONF", "ASIS"]),
+            Turno.fecha_hora >= datetime.combine(fecha_dia, datetime.min.time()),
+            Turno.fecha_hora < datetime.combine(fecha_dia, datetime.max.time())
         )
         
         if exclude_turno_id is not None:
             stmt = stmt.where(Turno.id != exclude_turno_id)
         
-        return self.session.scalar(stmt) is not None
+        turnos = list(self.session.scalars(stmt).all())
+        
+        # Verificar solapamiento en Python
+        for turno in turnos:
+            turno_fin = turno.fecha_hora + timedelta(minutes=turno.duracion_minutos)
+            if turno.fecha_hora < fecha_hora_fin and turno_fin > fecha_hora_inicio:
+                return True
+        
+        return False
 
     def verificar_solapamiento_paciente(
         self,
@@ -213,20 +222,30 @@ class TurnoRepository(BaseRepository[Turno]):
         Returns:
             True si hay solapamiento, False en caso contrario
         """
+        from src.domain.estado_turno import EstadoTurno
+        
+        # Obtener todos los turnos activos del paciente en el día
+        fecha_dia = fecha_hora_inicio.date()
         stmt = select(Turno).join(Turno.estado).where(
             Turno.id_paciente == paciente_id,
-            Turno.activo == True,  # noqa: E712
-            Turno.estado.has(codigo=or_("PEND", "CONF", "ASIS")),
-            and_(
-                Turno.fecha_hora < fecha_hora_fin,
-                Turno.fecha_hora_fin > fecha_hora_inicio
-            )
+            Turno.activo.is_(True),
+            EstadoTurno.codigo.in_(["PEND", "CONF", "ASIS"]),
+            Turno.fecha_hora >= datetime.combine(fecha_dia, datetime.min.time()),
+            Turno.fecha_hora < datetime.combine(fecha_dia, datetime.max.time())
         )
         
         if exclude_turno_id is not None:
             stmt = stmt.where(Turno.id != exclude_turno_id)
         
-        return self.session.scalar(stmt) is not None
+        turnos = list(self.session.scalars(stmt).all())
+        
+        # Verificar solapamiento en Python
+        for turno in turnos:
+            turno_fin = turno.fecha_hora + timedelta(minutes=turno.duracion_minutos)
+            if turno.fecha_hora < fecha_hora_fin and turno_fin > fecha_hora_inicio:
+                return True
+        
+        return False
 
     def contar_por_estado(
         self,
@@ -242,7 +261,7 @@ class TurnoRepository(BaseRepository[Turno]):
         stmt = select(Turno).options(
             joinedload(Turno.estado)
         ).where(
-            Turno.activo == True  # noqa: E712
+            Turno.activo.is_(True)
         )
         
         if fecha_desde:
@@ -283,7 +302,7 @@ class TurnoRepository(BaseRepository[Turno]):
             joinedload(Turno.medico),
             joinedload(Turno.especialidad)
         ).where(
-            Turno.activo == True,  # noqa: E712
+            Turno.activo.is_(True),
             Turno.fecha_hora >= fecha_inicio,
             Turno.fecha_hora <= fecha_fin
         )

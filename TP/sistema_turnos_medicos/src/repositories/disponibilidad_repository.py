@@ -131,35 +131,18 @@ class BloqueoMedicoRepository(BaseRepository[BloqueoMedico]):
         Returns:
             True si está bloqueado, False en caso contrario
         """
-        fecha_inicio = fecha_hora_inicio.date()
-        fecha_fin = fecha_hora_fin.date()
-        hora_inicio = fecha_hora_inicio.time()
-        hora_fin = fecha_hora_fin.time()
-        
         stmt = select(BloqueoMedico).where(
             BloqueoMedico.id_medico == medico_id,
             BloqueoMedico.activo == True,  # noqa: E712
-            # Solapamiento de fechas
+            # Solapamiento de fechas y horas
             and_(
-                BloqueoMedico.fecha_desde <= fecha_fin,
-                BloqueoMedico.fecha_hasta >= fecha_inicio
+                BloqueoMedico.inicio < fecha_hora_fin,
+                BloqueoMedico.fin > fecha_hora_inicio
             )
         )
         
-        bloqueos = list(self.session.scalars(stmt).all())
-        
-        # Verificar solapamiento de horarios si se especificaron
-        for bloqueo in bloqueos:
-            if bloqueo.hora_desde is None and bloqueo.hora_hasta is None:
-                # Bloqueo de día completo
-                return True
-            
-            if bloqueo.hora_desde is not None and bloqueo.hora_hasta is not None:
-                # Bloqueo con horario específico
-                if bloqueo.hora_desde < hora_fin and bloqueo.hora_hasta > hora_inicio:
-                    return True
-        
-        return False
+        resultado = self.session.scalar(stmt)
+        return resultado is not None
 
     def verificar_solapamiento(
         self,

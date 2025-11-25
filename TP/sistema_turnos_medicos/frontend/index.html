@@ -294,13 +294,50 @@
                 <!-- Step 4: Horario -->
                 <div class="step-content" id="step-4">
                     <div class="card">
-                        <h2>Seleccione Fecha y Horario</h2>
-                        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 1.5rem;">
-                            Haga clic en cualquier horario disponible para reservar
-                        </p>
-                        <div id="calendario-turnos" class="calendario-turnos">
-                            <!-- Se carga dinámicamente -->
+                        <div class="calendario-header">
+                            <div class="calendario-title">
+                                <h2>Seleccione Fecha y Horario</h2>
+                                <p>Haga clic en un horario disponible (en blanco) para reservar su turno</p>
+                            </div>
+                            
+                            <!-- Controles de navegación -->
+                            <div class="calendario-controls">
+                                <button class="btn btn-sm btn-secondary" onclick="cambiarSemana(-1)">
+                                    <i class="fas fa-chevron-left"></i> Semana Anterior
+                                </button>
+                                <div class="semana-actual">
+                                    <i class="fas fa-calendar"></i>
+                                    <span id="semana-texto">Cargando...</span>
+                                </div>
+                                <button class="btn btn-sm btn-secondary" onclick="cambiarSemana(1)">
+                                    Semana Siguiente <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <!-- Leyenda -->
+                            <div class="calendario-leyenda">
+                                <div class="leyenda-item">
+                                    <span class="leyenda-color disponible"></span>
+                                    <span>Disponible</span>
+                                </div>
+                                <div class="leyenda-item">
+                                    <span class="leyenda-color ocupado"></span>
+                                    <span>Ocupado</span>
+                                </div>
+                                <div class="leyenda-item">
+                                    <span class="leyenda-color seleccionado"></span>
+                                    <span>Seleccionado</span>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Calendario Semanal -->
+                        <div class="calendario-wrapper">
+                            <div id="calendario-semanal" class="calendario-semanal">
+                                <!-- Se carga dinámicamente -->
+                            </div>
+                        </div>
+
                         <div class="step-actions">
                             <button class="btn btn-secondary" onclick="prevStep(3)">
                                 <i class="fas fa-arrow-left"></i> Anterior

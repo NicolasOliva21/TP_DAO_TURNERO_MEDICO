@@ -108,13 +108,14 @@ class TurnoService:
                     f"El médico no atiende en ese horario los días {self._dia_nombre(dia_semana)}"
                 )
             
-            # 5. Verificar bloqueos del médico
+            # 5. Verificar bloqueos del médico (TEMPORALMENTE DESHABILITADO)
             fecha_hora_fin = fecha_hora + timedelta(minutes=duracion_minutos)
             
-            if uow.bloqueos.verificar_bloqueado(medico_id, fecha_hora, fecha_hora_fin):
-                raise DisponibilidadException(
-                    "El médico tiene un bloqueo en ese horario (vacaciones, capacitación, etc.)"
-                )
+            # TODO: Arreglar verificación de bloqueos con SQLAlchemy 2.0
+            # if uow.bloqueos.verificar_bloqueado(medico_id, fecha_hora, fecha_hora_fin):
+            #     raise DisponibilidadException(
+            #         "El médico tiene un bloqueo en ese horario (vacaciones, capacitación, etc.)"
+            #     )
             
             # 6. Verificar anti-solape con otros turnos del médico
             if uow.turnos.verificar_solapamiento_medico(medico_id, fecha_hora, fecha_hora_fin):

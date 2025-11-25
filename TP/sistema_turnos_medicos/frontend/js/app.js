@@ -272,6 +272,11 @@ function resetReservaTurno() {
     appState.horarioSeleccionado = null;
     updateStepper(1);
 
+    // Reset calendario
+    calendarioState.semanaActual = 0;
+    calendarioState.horariosTodos = {};
+    calendarioState.turnosOcupados = [];
+
     // Limpiar formularios
     document.getElementById('buscar-dni').value = '';
     document.getElementById('paciente-encontrado').style.display = 'none';
@@ -461,101 +466,270 @@ async function loadMedicosPorEspecialidad() {
 }
 
 // ============================================================
-// PASO 4: HORARIO (CALENDARIO INTERACTIVO)
+// PASO 4: HORARIO (CALENDARIO SEMANAL)
 // ============================================================
+
+// Estado del calendario
+const calendarioState = {
+    semanaActual: 0, // 0 = semana actual, 1 = siguiente, etc.
+    horariosTodos: {}, // Todos los horarios disponibles
+    turnosOcupados: [], // Turnos ya reservados
+};
 
 async function cargarHorariosDisponibles() {
     try {
         showLoading();
 
         // Obtener calendario completo del médico
-        const calendario = await api.getCalendarioDisponibilidad(appState.medicoSeleccionado.id, 14, 30);
-
-        const container = document.getElementById('calendario-turnos');
-        container.innerHTML = '';
-
-        if (Object.keys(calendario).length === 0) {
-            container.innerHTML = '<p style="text-align: center; padding: 3rem; color: var(--text-secondary);">No hay horarios disponibles en los próximos 14 días</p>';
-            return;
+        const calendario = await api.getCalendarioDisponibilidad(appState.medicoSeleccionado.id, 30, 30);
+        calendarioState.horariosTodos = calendario;
+        
+        console.log('Horarios disponibles cargados:', Object.keys(calendario).length, 'fechas');
+        console.log('Fechas disponibles:', Object.keys(calendario));
+        console.log('Muestra de horarios:', calendario);
+        
+        // Mostrar la primera fecha con horarios
+        const primeraFecha = Object.keys(calendario)[0];
+        if (primeraFecha) {
+            console.log(`Primera fecha disponible: ${primeraFecha}`);
+            console.log('Horarios para esa fecha:', calendario[primeraFecha]);
         }
 
-        // Agrupar por fecha y crear cards
-        const fechas = Object.keys(calendario).sort();
+        // Intentar obtener turnos ocupados del médico (opcional - para mostrar info visual)
+        // Si falla, el calendario seguirá funcionando mostrando solo disponibilidad
+        calendarioState.turnosOcupados = [];
+        try {
+            const turnosOcupados = await api.getTurnosByMedico(appState.medicoSeleccionado.id);
+            if (Array.isArray(turnosOcupados)) {
+                calendarioState.turnosOcupados = turnosOcupados;
+                console.log(`Turnos ocupados cargados: ${turnosOcupados.length}`);
+            }
+        } catch (error) {
+            console.warn('No se pudieron cargar turnos ocupados (esto no afecta la funcionalidad):', error.message);
+            // Continuar sin turnos ocupados - el calendario solo mostrará disponibilidad
+        }
 
-        fechas.forEach(fecha => {
-            const horarios = calendario[fecha];
-
-            // Crear card de fecha
-            const fechaCard = document.createElement('div');
-            fechaCard.className = 'fecha-card';
-
-            // Header con la fecha
-            const header = document.createElement('div');
-            header.className = 'fecha-header';
-            const fechaObj = new Date(fecha + 'T00:00:00');
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            header.innerHTML = `
-                <i class="fas fa-calendar-day"></i>
-                <span>${fechaObj.toLocaleDateString('es-AR', options)}</span>
-                <span class="badge-count">${horarios.length} turnos</span>
-            `;
-            fechaCard.appendChild(header);
-
-            // Grid de horarios
-            const horariosGrid = document.createElement('div');
-            horariosGrid.className = 'horarios-mini-grid';
-
-            horarios.forEach(horarioISO => {
-                const horarioBtn = document.createElement('button');
-                horarioBtn.className = 'horario-mini-btn';
-                horarioBtn.type = 'button'; // Importante: evitar submit
-
-                const horarioObj = new Date(horarioISO);
-                const horaStr = horarioObj.toLocaleTimeString('es-AR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                horarioBtn.textContent = horaStr;
-                horarioBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    console.log('Horario seleccionado:', horarioISO);
-
-                    // Desmarcar todos
-                    document.querySelectorAll('.horario-mini-btn').forEach(b =>
-                        b.classList.remove('selected')
-                    );
-
-                    // Marcar este
-                    horarioBtn.classList.add('selected');
-                    appState.horarioSeleccionado = horarioISO;
-
-                    // Habilitar botón siguiente
-                    const btnSiguiente = document.getElementById('btn-step-4');
-                    if (btnSiguiente) {
-                        btnSiguiente.disabled = false;
-                    }
-
-                    console.log('Estado actualizado:', appState.horarioSeleccionado);
-                });
-
-                horariosGrid.appendChild(horarioBtn);
-            });
-
-            fechaCard.appendChild(horariosGrid);
-            container.appendChild(fechaCard);
-        });
+        // Renderizar calendario
+        renderizarCalendarioSemanal();
 
     } catch (error) {
         console.error('Error al cargar calendario:', error);
         showToast('Error al cargar horarios disponibles', 'error');
-        document.getElementById('calendario-turnos').innerHTML =
+        document.getElementById('calendario-semanal').innerHTML =
             '<p style="text-align: center; padding: 3rem; color: var(--danger-color);">Error al cargar horarios</p>';
     } finally {
         hideLoading();
     }
+}
+
+function cambiarSemana(direccion) {
+    calendarioState.semanaActual += direccion;
+    if (calendarioState.semanaActual < 0) {
+        calendarioState.semanaActual = 0;
+        showToast('No se pueden ver semanas anteriores', 'info');
+        return;
+    }
+    renderizarCalendarioSemanal();
+}
+
+function renderizarCalendarioSemanal() {
+    console.log('=== INICIANDO RENDERIZADO DE CALENDARIO SEMANAL ===');
+    const container = document.getElementById('calendario-semanal');
+    if (!container) {
+        console.error('ERROR: No se encontró el contenedor calendario-semanal');
+        return;
+    }
+    
+    // Verificar que el container tenga la clase para el grid
+    if (!container.classList.contains('calendario-semanal')) {
+        container.classList.add('calendario-semanal');
+        console.log('Clase calendario-semanal agregada al container');
+    }
+    
+    // FORZAR GRID con estilos inline como fallback
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = '80px repeat(7, 1fr)';
+    container.style.minWidth = '800px';
+    
+    container.innerHTML = '';
+    console.log('Container limpiado - Grid forzado con estilos inline');
+
+    // Calcular fechas de la semana
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    const inicioSemana = new Date(hoy);
+    inicioSemana.setDate(hoy.getDate() + (calendarioState.semanaActual * 7));
+    
+    // Ajustar al lunes de la semana
+    const diaSemana = inicioSemana.getDay();
+    const diferencia = diaSemana === 0 ? -6 : 1 - diaSemana;
+    inicioSemana.setDate(inicioSemana.getDate() + diferencia);
+
+    const diasSemana = [];
+    for (let i = 0; i < 7; i++) {
+        const dia = new Date(inicioSemana);
+        dia.setDate(inicioSemana.getDate() + i);
+        diasSemana.push(dia);
+    }
+
+    console.log('Días de la semana calculados:', diasSemana.length);
+
+    // Actualizar texto de semana actual
+    const primerDia = diasSemana[0];
+    const ultimoDia = diasSemana[6];
+    const semanaTexto = document.getElementById('semana-texto');
+    if (semanaTexto) {
+        semanaTexto.textContent = 
+            `${primerDia.getDate()} ${primerDia.toLocaleDateString('es-AR', { month: 'short' })} - ${ultimoDia.getDate()} ${ultimoDia.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })}`;
+    }
+
+    // Definir horarios (de 8:00 a 19:00 - 12 slots de 1 hora)
+    const horasDelDia = [];
+    for (let hora = 8; hora < 20; hora++) {
+        horasDelDia.push(hora.toString().padStart(2, '0'));
+    }
+
+    console.log(`Creando grid de ${horasDelDia.length} horas x 7 días`);
+
+    // Crear encabezado - esquina
+    const headerCorner = document.createElement('div');
+    headerCorner.className = 'cal-header-corner';
+    headerCorner.innerHTML = '<i class="fas fa-clock"></i>';
+    container.appendChild(headerCorner);
+
+    // Crear encabezados de días
+    const nombresDias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    diasSemana.forEach((dia, index) => {
+        const headerDia = document.createElement('div');
+        headerDia.className = 'cal-header-dia';
+        
+        const esHoy = dia.toDateString() === hoy.toDateString();
+        if (esHoy) {
+            headerDia.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+        }
+        
+        headerDia.innerHTML = `
+            <span class="cal-dia-nombre">${nombresDias[index]}</span>
+            <span class="cal-dia-numero">${dia.getDate()}</span>
+        `;
+        container.appendChild(headerDia);
+    });
+
+    console.log('Encabezados creados');
+
+    // Crear filas de horarios
+    let celdasCreadas = 0;
+    horasDelDia.forEach(hora => {
+        // Label de hora
+        const horaLabel = document.createElement('div');
+        horaLabel.className = 'cal-hora-label';
+        horaLabel.textContent = `${hora}:00`;
+        container.appendChild(horaLabel);
+
+        // Celdas de cada día
+        diasSemana.forEach((dia, indexDia) => {
+            const celda = document.createElement('div');
+            celda.className = 'cal-celda';
+
+            const fechaStr = dia.toISOString().split('T')[0];
+            
+            // Debug para el primer día y primera hora
+            if (celdasCreadas === 0) {
+                console.log(`🔍 Primera celda - Día:`, dia, `fechaStr:`, fechaStr, `hora:`, hora);
+                console.log(`Buscando en calendarioState.horariosTodos['${fechaStr}']:`, calendarioState.horariosTodos[fechaStr]);
+            }
+            
+            // Buscar si hay horario disponible (hora es "08", "09", etc.)
+            const horarioDisponible = buscarHorarioDisponible(fechaStr, hora);
+            
+            // Buscar si hay turno ocupado
+            const turnoOcupado = buscarTurnoOcupado(fechaStr, hora);
+
+            if (turnoOcupado) {
+                // Celda ocupada - mostrar información del turno
+                const colores = ['', 'amarillo', 'verde', 'rosa'];
+                const colorAleatorio = colores[Math.floor(Math.random() * colores.length)];
+                celda.classList.add('ocupado', colorAleatorio);
+                
+                const horaTurno = new Date(turnoOcupado.fecha_hora);
+                celda.innerHTML = `
+                    <div class="turno-info">
+                        <div class="turno-hora">${horaTurno.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div class="turno-materia">Turno Reservado</div>
+                        <div class="turno-aula">Paciente: ${turnoOcupado.paciente?.nombre || 'N/A'}</div>
+                    </div>
+                `;
+            } else if (horarioDisponible) {
+                // Celda disponible
+                celda.classList.add('disponible');
+                celda.dataset.horario = horarioDisponible;
+                
+                celda.addEventListener('click', () => {
+                    // Desmarcar todas las celdas
+                    document.querySelectorAll('.cal-celda').forEach(c => {
+                        c.classList.remove('seleccionado');
+                    });
+                    
+                    // Marcar esta celda
+                    celda.classList.add('seleccionado');
+                    appState.horarioSeleccionado = horarioDisponible;
+                    
+                    // Habilitar botón siguiente
+                    document.getElementById('btn-step-4').disabled = false;
+                    
+                    // Mostrar feedback
+                    const fecha = new Date(horarioDisponible);
+                    showToast(`Horario seleccionado: ${fecha.toLocaleString('es-AR')}`, 'success');
+                });
+            } else {
+                // Celda sin disponibilidad (día que el médico no trabaja)
+                celda.classList.add('no-disponible');
+                celda.style.background = '#f8f9fa';
+                celda.style.cursor = 'not-allowed';
+                celda.style.border = '1px solid #e2e8f0';
+            }
+
+            container.appendChild(celda);
+            celdasCreadas++;
+        });
+    });
+    
+    console.log(`=== CALENDARIO COMPLETADO: ${celdasCreadas} celdas creadas ===`);
+}
+
+function buscarHorarioDisponible(fecha, hora) {
+    // Buscar en los horarios disponibles
+    if (!calendarioState.horariosTodos[fecha]) {
+        return null;
+    }
+    
+    const horarios = calendarioState.horariosTodos[fecha];
+    
+    // Buscar cualquier horario que comience con la hora especificada
+    // Los timestamps vienen como "2025-11-24T08:00:00", "2025-11-24T08:30:00", etc.
+    const horarioEncontrado = horarios.find(h => {
+        // Extraer la hora del timestamp directamente del string
+        // Formato: "2025-11-24T08:00:00" -> extraer "08"
+        const horaStr = h.substring(11, 13); // Posiciones 11-12 son la hora
+        return horaStr === hora;
+    });
+    
+    if (fecha === '2025-11-24' && hora === '08' && horarioEncontrado) {
+        console.log('✅ ENCONTRADO para', fecha, hora, ':', horarioEncontrado);
+    }
+    
+    return horarioEncontrado;
+}
+
+function buscarTurnoOcupado(fecha, hora) {
+    return calendarioState.turnosOcupados.find(turno => {
+        const fechaTurno = new Date(turno.fecha_hora);
+        const fechaTurnoStr = fechaTurno.toISOString().split('T')[0];
+        const horaTurnoStr = fechaTurno.getHours().toString().padStart(2, '0');
+        
+        return fechaTurnoStr === fecha && horaTurnoStr === hora;
+    });
 }
 
 // ==============================================================
@@ -587,6 +761,8 @@ async function confirmarTurno() {
         duracion_minutos: 30,
         motivo: motivo,
     };
+
+    console.log('📤 Enviando datos del turno:', turnoData);
 
     try {
         showLoading();

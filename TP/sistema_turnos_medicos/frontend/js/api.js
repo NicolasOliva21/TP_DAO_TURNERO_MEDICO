@@ -21,10 +21,46 @@ class APIClient {
 
         try {
             const response = await fetch(url, config);
-            const data = await response.json();
+            
+            // Leer el texto primero para evitar problemas con el stream
+            const responseText = await response.text();
+            
+            let data;
+            try {
+                // Intentar parsear como JSON
+                data = responseText ? JSON.parse(responseText) : {};
+            } catch (e) {
+                // Si no es JSON válido, usar como texto plano
+                data = { detail: responseText || `Error ${response.status}` };
+            }
 
             if (!response.ok) {
-                throw new Error(data.detail || `Error ${response.status}`);
+                // Log detallado del error
+                console.error('❌ Error Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    data: data,
+                    dataString: JSON.stringify(data, null, 2),
+                    url: url
+                });
+                
+                // Extraer el mensaje de error apropiado
+                let errorMessage;
+                if (data.detail) {
+                    // FastAPI devuelve errores en detail
+                    if (Array.isArray(data.detail)) {
+                        // Errores de validación de Pydantic
+                        errorMessage = data.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+                        console.error('Errores de validación:', data.detail);
+                    } else {
+                        errorMessage = String(data.detail);
+                    }
+                } else {
+                    errorMessage = JSON.stringify(data) || response.statusText || `Error ${response.status}`;
+                }
+                
+                console.error('Mensaje de error final:', errorMessage);
+                throw new Error(errorMessage);
             }
 
             return data;
@@ -162,6 +198,10 @@ class APIClient {
             duracion: duracion,
         });
         return this.request(`/turnos/calendario/${medicoId}?${params}`);
+    }
+
+    async getTurnosByMedico(medicoId) {
+        return this.request(`/turnos/medico/${medicoId}`);
     }
 
     async createTurno(turnoData) {
