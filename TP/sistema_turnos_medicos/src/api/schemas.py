@@ -21,6 +21,18 @@ class EspecialidadResponse(BaseModel):
         from_attributes = True
 
 
+class EspecialidadCreate(BaseModel):
+    """Esquema para crear una especialidad."""
+    nombre: str = Field(..., min_length=3, max_length=100, description="Nombre de la especialidad")
+    descripcion: Optional[str] = Field(None, max_length=500, description="Descripción de la especialidad")
+
+
+class EspecialidadUpdate(BaseModel):
+    """Esquema para actualizar una especialidad."""
+    nombre: Optional[str] = Field(None, min_length=3, max_length=100)
+    descripcion: Optional[str] = Field(None, max_length=500)
+
+
 class MedicoResponse(BaseModel):
     """Esquema de respuesta para médico."""
     id: int
@@ -96,6 +108,95 @@ class DisponibilidadResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class DisponibilidadCreate(BaseModel):
+    """Esquema para crear una disponibilidad."""
+    dia_semana: int = Field(..., ge=0, le=6, description="0=Domingo, 1=Lunes, ..., 6=Sábado")
+    hora_desde: time
+    hora_hasta: time
+    duracion_slot: int = Field(default=30, ge=15, le=120, description="Duración del turno en minutos")
+    
+    @field_validator('dia_semana')
+    @classmethod
+    def validar_dia_semana(cls, v: int) -> int:
+        """Valida que el día de la semana esté en rango válido."""
+        if not 0 <= v <= 6:
+            raise ValueError("El día de la semana debe estar entre 0 (Domingo) y 6 (Sábado)")
+        return v
+    
+    @field_validator('hora_hasta')
+    @classmethod
+    def validar_horarios(cls, v: time, info) -> time:
+        """Valida que hora_hasta sea mayor a hora_desde."""
+        if 'hora_desde' in info.data and v <= info.data['hora_desde']:
+            raise ValueError("La hora de fin debe ser posterior a la hora de inicio")
+        return v
+
+
+class DisponibilidadUpdate(BaseModel):
+    """Esquema para actualizar una disponibilidad."""
+    hora_desde: Optional[time] = None
+    hora_hasta: Optional[time] = None
+    duracion_slot: Optional[int] = Field(None, ge=15, le=120)
+    
+    @field_validator('hora_hasta')
+    @classmethod
+    def validar_horarios(cls, v: Optional[time], info) -> Optional[time]:
+        """Valida que hora_hasta sea mayor a hora_desde si ambos están presentes."""
+        if v and 'hora_desde' in info.data and info.data['hora_desde'] and v <= info.data['hora_desde']:
+            raise ValueError("La hora de fin debe ser posterior a la hora de inicio")
+        return v
+
+
+class BloqueoResponse(BaseModel):
+    """Esquema de respuesta para bloqueo de médico."""
+    id: int
+    id_medico: int
+    inicio: datetime
+    fin: datetime
+    motivo: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class BloqueoCreate(BaseModel):
+    """Esquema para crear un bloqueo (día completo)."""
+    inicio: date = Field(..., description="Fecha de inicio del bloqueo (formato: YYYY-MM-DD)")
+    fin: date = Field(..., description="Fecha de fin del bloqueo (formato: YYYY-MM-DD)")
+    motivo: Optional[str] = Field(None, max_length=200, description="Motivo del bloqueo (vacaciones, capacitación, etc.)")
+    
+    @field_validator('fin')
+    @classmethod
+    def validar_fechas(cls, v: date, info) -> date:
+        """Valida que la fecha de fin sea posterior a la de inicio."""
+        if 'inicio' in info.data and v < info.data['inicio']:
+            raise ValueError("La fecha de fin debe ser posterior o igual a la fecha de inicio")
+        return v
+    
+    @field_validator('inicio')
+    @classmethod
+    def validar_fecha_futura(cls, v: date) -> date:
+        """Valida que el bloqueo no sea del pasado."""
+        if v < date.today():
+            raise ValueError("No se pueden crear bloqueos en el pasado")
+        return v
+
+
+class BloqueoUpdate(BaseModel):
+    """Esquema para actualizar un bloqueo."""
+    inicio: Optional[date] = None
+    fin: Optional[date] = None
+    motivo: Optional[str] = Field(None, max_length=200)
+    
+    @field_validator('fin')
+    @classmethod
+    def validar_fechas(cls, v: Optional[date], info) -> Optional[date]:
+        """Valida que la fecha de fin sea posterior a la de inicio si ambos están presentes."""
+        if v and 'inicio' in info.data and info.data['inicio'] and v < info.data['inicio']:
+            raise ValueError("La fecha de fin debe ser posterior o igual a la fecha de inicio")
+        return v
 
 
 class HorarioDisponibleResponse(BaseModel):

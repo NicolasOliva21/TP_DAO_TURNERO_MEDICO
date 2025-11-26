@@ -105,13 +105,16 @@ class BloqueoMedicoRepository(BaseRepository[BloqueoMedico]):
         
         if fecha_desde:
             # Bloqueos que terminan después de fecha_desde
-            stmt = stmt.where(BloqueoMedico.fecha_hasta >= fecha_desde)
+            # Convertir date a datetime para comparar con inicio/fin
+            fecha_desde_dt = datetime.combine(fecha_desde, time.min)
+            stmt = stmt.where(BloqueoMedico.fin >= fecha_desde_dt)
         
         if fecha_hasta:
             # Bloqueos que empiezan antes de fecha_hasta
-            stmt = stmt.where(BloqueoMedico.fecha_desde <= fecha_hasta)
+            fecha_hasta_dt = datetime.combine(fecha_hasta, time.max)
+            stmt = stmt.where(BloqueoMedico.inicio <= fecha_hasta_dt)
         
-        stmt = stmt.order_by(BloqueoMedico.fecha_desde)
+        stmt = stmt.order_by(BloqueoMedico.inicio)
         return list(self.session.scalars(stmt).all())
 
     def verificar_bloqueado(
@@ -147,10 +150,8 @@ class BloqueoMedicoRepository(BaseRepository[BloqueoMedico]):
     def verificar_solapamiento(
         self,
         medico_id: int,
-        fecha_desde: date,
-        fecha_hasta: date,
-        hora_desde: Optional[time],
-        hora_hasta: Optional[time],
+        inicio: datetime,
+        fin: datetime,
         exclude_id: Optional[int] = None
     ) -> bool:
         """
@@ -158,10 +159,8 @@ class BloqueoMedicoRepository(BaseRepository[BloqueoMedico]):
         
         Args:
             medico_id: ID del médico
-            fecha_desde: Fecha de inicio del bloqueo
-            fecha_hasta: Fecha de fin del bloqueo
-            hora_desde: Hora de inicio (opcional)
-            hora_hasta: Hora de fin (opcional)
+            inicio: Fecha y hora de inicio del bloqueo
+            fin: Fecha y hora de fin del bloqueo
             exclude_id: ID a excluir (para actualizaciones)
         
         Returns:
@@ -171,27 +170,13 @@ class BloqueoMedicoRepository(BaseRepository[BloqueoMedico]):
             BloqueoMedico.id_medico == medico_id,
             BloqueoMedico.activo == True,  # noqa: E712
             and_(
-                BloqueoMedico.fecha_desde <= fecha_hasta,
-                BloqueoMedico.fecha_hasta >= fecha_desde
+                BloqueoMedico.inicio < fin,
+                BloqueoMedico.fin > inicio
             )
         )
         
         if exclude_id is not None:
             stmt = stmt.where(BloqueoMedico.id != exclude_id)
         
-        bloqueos = list(self.session.scalars(stmt).all())
-        
-        # Si no hay horarios específicos, cualquier bloqueo en ese rango es solapamiento
-        if hora_desde is None or hora_hasta is None:
-            return len(bloqueos) > 0
-        
-        # Verificar solapamiento de horarios
-        for bloqueo in bloqueos:
-            if bloqueo.hora_desde is None or bloqueo.hora_hasta is None:
-                # Bloqueo de día completo
-                return True
-            
-            if bloqueo.hora_desde < hora_hasta and bloqueo.hora_hasta > hora_desde:
-                return True
-        
-        return False
+        resultado = self.session.scalar(stmt)
+        return resultado is not None

@@ -14,6 +14,7 @@
     --border-color: #e2e8f0;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --sidebar-width: 280px;
 }
 
 * {
@@ -35,6 +36,103 @@ body {
     padding: 0 1.5rem;
 }
 
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--card-bg);
+    box-shadow: var(--shadow-lg);
+    z-index: 2000;
+    transition: left 0.3s ease;
+    overflow-y: auto;
+}
+
+.sidebar.open {
+    left: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+.sidebar-close:hover {
+    background: var(--bg-color);
+    color: var(--danger-color);
+}
+
+.sidebar-nav {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sidebar-nav .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+    font-size: 0.9375rem;
+}
+
+.sidebar-nav .nav-btn i {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+}
+
+.sidebar-nav .nav-btn:hover {
+    background: var(--bg-color);
+    color: var(--primary-color);
+}
+
+.sidebar-nav .nav-btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999;
+    display: none;
+}
+
+.sidebar-overlay.show {
+    display: block;
+}
+
 /* Header */
 .header {
     background: var(--card-bg);
@@ -46,9 +144,24 @@ body {
 
 .header-content {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 1rem;
     padding: 1rem 0;
+}
+
+.menu-toggle {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+.menu-toggle:hover {
+    background: var(--bg-color);
 }
 
 .logo {
@@ -867,12 +980,15 @@ body {
 }
 
 .cal-celda.disponible {
-    background: white;
+    background: #e0f2fe;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .cal-celda.disponible:hover {
-    background: rgba(37, 99, 235, 0.05);
-    box-shadow: inset 0 0 0 2px var(--primary-light);
+    background: #bae6fd;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+    transform: scale(1.02);
 }
 
 .cal-celda.no-disponible {
@@ -1069,6 +1185,58 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* Fecha bloqueada */
+.fecha-card.fecha-bloqueada {
+    background: repeating-linear-gradient(
+        45deg,
+        #f8fafc,
+        #f8fafc 10px,
+        #f1f5f9 10px,
+        #f1f5f9 20px
+    );
+    border-color: var(--danger-color);
+    opacity: 0.8;
+}
+
+.fecha-card.fecha-bloqueada .fecha-header {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.badge-bloqueado {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.mensaje-bloqueo {
+    padding: 2rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-secondary);
+}
+
+.mensaje-bloqueo i {
+    font-size: 2rem;
+    color: var(--danger-color);
+}
+
+.mensaje-bloqueo strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.motivo-bloqueo {
+    font-size: 0.875rem;
+    font-style: italic;
+    margin: 0;
+}
+
 .fecha-header {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     color: white;
@@ -1205,6 +1373,7 @@ body {
     border-radius: 1rem;
     font-size: 0.8125rem;
     font-weight: 600;
+    display: inline-block;
 }
 
 .turno-estado.pendiente {
@@ -1217,9 +1386,15 @@ body {
     color: var(--success-color);
 }
 
-.turno-estado.cancelado {
+.turno-estado.cancelado,
+.turno-estado.realizado {
     background: rgba(239, 68, 68, 0.1);
     color: var(--danger-color);
+}
+
+.turno-estado.realizado {
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--secondary-color);
 }
 
 .turno-details {
@@ -1286,6 +1461,52 @@ td {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination button {
+    padding: 0.5rem 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.pagination button.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
 }
 
 /* Loading Overlay */
@@ -1427,5 +1648,441 @@ td {
     
     .toast {
         min-width: auto;
+    }
+}
+
+/* ============================================================
+   ESTILOS PARA GESTIÓN DE HORARIOS
+   ============================================================ */
+
+/* Mensajes de información y alertas */
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.alert i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-info {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.alert-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.alert-success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.alert-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Mensajes de texto muted */
+.text-muted {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Horarios Semanales */
+.horarios-semanales {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.dia-horario {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.dia-horario.activo {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.dia-horario.inactivo {
+    opacity: 0.6;
+}
+
+.dia-header {
+    padding: 0.75rem;
+    color: white;
+    text-align: center;
+    font-weight: 600;
+}
+
+.dia-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Colores por día */
+.dia-header.domingo { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.dia-header.lunes { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.dia-header.martes { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.dia-header.miercoles { background: linear-gradient(135deg, #10b981, #059669); }
+.dia-header.jueves { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.dia-header.viernes { background: linear-gradient(135deg, #ec4899, #db2777); }
+.dia-header.sabado { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+
+.dia-content {
+    padding: 1rem;
+    background: white;
+}
+
+.sin-horario {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+    margin: 0;
+}
+
+.horario-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--bg-color);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.horario-item:hover {
+    background: #e0f2fe;
+    transform: translateX(4px);
+}
+
+.horario-item:last-child {
+    margin-bottom: 0;
+}
+
+.horario-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.horario-info i {
+    color: var(--primary-color);
+}
+
+.horario-texto {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.horario-duracion {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.horario-acciones {
+    display: flex;
+    gap: 0.25rem;
+}
+
+/* Bloqueos */
+.lista-bloqueos {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.bloqueo-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.bloqueo-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.bloqueo-item.activo {
+    border-color: var(--warning-color);
+    background: #fffbeb;
+}
+
+.bloqueo-item.futuro {
+    border-color: var(--primary-color);
+    background: #eff6ff;
+}
+
+.bloqueo-item.pasado {
+    opacity: 0.6;
+    background: #f8fafc;
+}
+
+.bloqueo-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--danger-color);
+    color: white;
+    flex-shrink: 0;
+}
+
+.bloqueo-item.activo .bloqueo-icono {
+    background: var(--warning-color);
+}
+
+.bloqueo-item.futuro .bloqueo-icono {
+    background: var(--primary-color);
+}
+
+.bloqueo-icono i {
+    font-size: 1.5rem;
+}
+
+.bloqueo-info {
+    flex: 1;
+}
+
+.bloqueo-fechas {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.bloqueo-motivo {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.bloqueo-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.bloqueo-item.activo .bloqueo-estado {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.bloqueo-item.futuro .bloqueo-estado {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.bloqueo-item.pasado .bloqueo-estado {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.bloqueo-acciones {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+/* Botones de iconos */
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background: var(--bg-color);
+    transform: scale(1.1);
+}
+
+.btn-icon.btn-edit:hover {
+    color: var(--primary-color);
+    background: #eff6ff;
+}
+
+.btn-icon.btn-delete:hover {
+    color: var(--danger-color);
+    background: #fef2f2;
+}
+
+.btn-icon.btn-success {
+    color: var(--success-color);
+}
+
+.btn-icon.btn-success:hover {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* Card Header para Horarios */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.card-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.card-header i {
+    color: var(--primary-color);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0.25rem;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+    color: var(--danger-color);
+}
+
+.modal form {
+    padding: 1.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Estilos para horarios bloqueados en calendario */
+.slot.bloqueado {
+    background: repeating-linear-gradient(
+        45deg,
+        #f1f5f9,
+        #f1f5f9 10px,
+        #e2e8f0 10px,
+        #e2e8f0 20px
+    ) !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+}
+
+.slot.bloqueado:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .horarios-semanales {
+        grid-template-columns: 1fr;
+    }
+    
+    .bloqueo-item {
+        flex-direction: column;
+    }
+    
+    .bloqueo-acciones {
+        justify-content: flex-end;
+        width: 100%;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .card-header .btn {
+        width: 100%;
     }
 }

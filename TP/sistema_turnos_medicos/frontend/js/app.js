@@ -16,10 +16,24 @@ const appState = {
 };
 
 // ============================================================
-// NAVEGACIÓN
+// NAVEGACIÓN Y SIDEBAR
 // ============================================================
 
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+}
+
 function navigateTo(page) {
+    // Cerrar sidebar en móvil
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+
     // Desactivar todos los botones de navegación
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -50,12 +64,25 @@ function navigateTo(page) {
         case 'turnos':
             resetReservaTurno();
             break;
+        case 'mis-turnos':
+            initMisTurnos();
+            break;
         case 'pacientes':
             loadPacientesTable();
             break;
         case 'medicos':
             loadMedicosTable();
             loadEspecialidadesCheckboxes();
+            break;
+        case 'especialidades':
+            if (typeof initEspecialidades === 'function') {
+                initEspecialidades();
+            }
+            break;
+        case 'horarios':
+            if (typeof initHorarios === 'function') {
+                initHorarios();
+            }
             break;
         case 'reportes':
             actualizarReportes();
@@ -640,16 +667,31 @@ function renderizarCalendarioSemanal() {
             // Debug para el primer día y primera hora
             if (celdasCreadas === 0) {
                 console.log(`🔍 Primera celda - Día:`, dia, `fechaStr:`, fechaStr, `hora:`, hora);
-                console.log(`Buscando en calendarioState.horariosTodos['${fechaStr}']:`, calendarioState.horariosTodos[fechaStr]);
+                const diaInfo = calendarioState.horariosTodos[fechaStr];
+                console.log(`Buscando en calendarioState.horariosTodos['${fechaStr}']:`, diaInfo);
+                if (diaInfo) {
+                    console.log(`  - Bloqueado:`, diaInfo.bloqueado);
+                    console.log(`  - Horarios disponibles:`, diaInfo.horarios?.length || 0);
+                }
             }
 
             // Buscar si hay horario disponible (hora es "08", "09", etc.)
             const horarioDisponible = buscarHorarioDisponible(fechaStr, hora);
 
+            // Verificar si el día está bloqueado
+            const diaInfo = calendarioState.horariosTodos[fechaStr];
+            const diaBloqueado = diaInfo?.bloqueado || false;
+
             // Buscar si hay turno ocupado
             const turnoOcupado = buscarTurnoOcupado(fechaStr, hora);
 
-            if (turnoOcupado) {
+            if (diaBloqueado) {
+                // Día bloqueado (vacaciones, ausencias)
+                celda.classList.add('bloqueado');
+                celda.style.background = 'repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, #e0e0e0 10px, #e0e0e0 20px)';
+                celda.style.cursor = 'not-allowed';
+                celda.title = diaInfo.motivo_bloqueo || 'Médico no disponible';
+            } else if (turnoOcupado) {
                 // Celda ocupada - mostrar información del turno
                 const colores = ['', 'amarillo', 'verde', 'rosa'];
                 const colorAleatorio = colores[Math.floor(Math.random() * colores.length)];
@@ -707,7 +749,15 @@ function buscarHorarioDisponible(fecha, hora) {
         return null;
     }
 
-    const horarios = calendarioState.horariosTodos[fecha];
+    const diaInfo = calendarioState.horariosTodos[fecha];
+    
+    // Verificar si el día está bloqueado
+    if (diaInfo.bloqueado) {
+        return null;
+    }
+    
+    // Obtener el array de horarios
+    const horarios = diaInfo.horarios || [];
 
     // Buscar cualquier horario que comience con la hora especificada
     // Los timestamps vienen como "2025-11-24T08:00:00", "2025-11-24T08:30:00", etc.
@@ -801,6 +851,198 @@ Fecha y Hora: ${formatDateTime(appState.horarioSeleccionado)}
 // ============================================================
 // MIS TURNOS
 // ============================================================
+
+const misTurnosState = {
+    currentPage: 1,
+    pageSize: 15,
+    totalPages: 0,
+    currentDNI: null
+};
+
+function initMisTurnos() {
+    misTurnosState.currentPage = 1;
+    misTurnosState.currentDNI = null;
+    document.getElementById('buscar-turnos-dni').value = '';
+    cargarTodosTurnos();
+}
+
+async function cargarTodosTurnos() {
+    misTurnosState.currentDNI = null;
+    document.getElementById('buscar-turnos-dni').value = '';
+    await cargarMisTurnos();
+}
+
+async function buscarTurnosPorDNI() {
+    const dni = document.getElementById('buscar-turnos-dni').value.trim();
+    
+    if (!dni) {
+        showToast('Ingrese un DNI', 'warning');
+        return;
+    }
+    
+    misTurnosState.currentDNI = dni;
+    misTurnosState.currentPage = 1;
+    await cargarMisTurnos();
+}
+
+async function cargarMisTurnos(page = null) {
+    if (page !== null) {
+        misTurnosState.currentPage = page;
+    }
+    
+    try {
+        showLoading();
+        
+        const params = new URLSearchParams({
+            page: misTurnosState.currentPage,
+            page_size: misTurnosState.pageSize
+        });
+        
+        if (misTurnosState.currentDNI) {
+            params.append('dni', misTurnosState.currentDNI);
+        }
+        
+        const data = await api.request(`/turnos/mis-turnos/listar?${params}`);
+        
+        misTurnosState.totalPages = data.total_pages;
+        
+        renderizarTablaMisTurnos(data.turnos);
+        renderizarPaginacion(data);
+        
+    } catch (error) {
+        console.error('Error al cargar turnos:', error);
+        showToast('Error al cargar turnos', 'error');
+        document.getElementById('mis-turnos-tbody').innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    Error al cargar turnos
+                </td>
+            </tr>
+        `;
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderizarTablaMisTurnos(turnos) {
+    const tbody = document.getElementById('mis-turnos-tbody');
+    
+    if (!turnos || turnos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    No hay turnos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = turnos.map(turno => {
+        const fecha = new Date(turno.fecha_hora);
+        const fechaStr = fecha.toLocaleDateString('es-AR');
+        const horaStr = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        
+        const estadoClass = 
+            turno.estado.codigo === 'PEND' ? 'pendiente' :
+            turno.estado.codigo === 'CONF' ? 'confirmado' :
+            turno.estado.codigo === 'CANC' ? 'cancelado' : 'realizado';
+        
+        const especialidadNombre = turno.medico.especialidades && turno.medico.especialidades.length > 0
+            ? turno.medico.especialidades[0].nombre
+            : turno.especialidad?.nombre || 'N/A';
+        
+        return `
+            <tr>
+                <td>${fechaStr}</td>
+                <td>${horaStr}</td>
+                <td>${turno.paciente.nombre_completo}</td>
+                <td>${turno.paciente.dni}</td>
+                <td>Dr. ${turno.medico.nombre_completo}</td>
+                <td>${especialidadNombre}</td>
+                <td><span class="turno-estado ${estadoClass}">${turno.estado.descripcion}</span></td>
+                <td>
+                    <div class="actions">
+                        ${turno.estado.codigo === 'PEND' ? `
+                            <button class="btn-icon btn-success" onclick="confirmarTurnoById(${turno.id})" title="Confirmar">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        ` : ''}
+                        ${turno.estado.codigo !== 'CANC' && turno.estado.codigo !== 'INAS' ? `
+                            <button class="btn-icon btn-delete" onclick="cancelarTurnoById(${turno.id})" title="Cancelar">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderizarPaginacion(data) {
+    const container = document.getElementById('mis-turnos-pagination');
+    
+    if (data.total_pages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Botón anterior
+    html += `
+        <button ${data.page === 1 ? 'disabled' : ''} onclick="cargarMisTurnos(${data.page - 1})">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+    
+    // Números de página
+    const maxVisible = 5;
+    let startPage = Math.max(1, data.page - Math.floor(maxVisible / 2));
+    let endPage = Math.min(data.total_pages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage < maxVisible - 1) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    if (startPage > 1) {
+        html += `<button onclick="cargarMisTurnos(1)">1</button>`;
+        if (startPage > 2) {
+            html += `<span style="padding: 0 0.5rem;">...</span>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `
+            <button class="${i === data.page ? 'active' : ''}" onclick="cargarMisTurnos(${i})">
+                ${i}
+            </button>
+        `;
+    }
+    
+    if (endPage < data.total_pages) {
+        if (endPage < data.total_pages - 1) {
+            html += `<span style="padding: 0 0.5rem;">...</span>`;
+        }
+        html += `<button onclick="cargarMisTurnos(${data.total_pages})">${data.total_pages}</button>`;
+    }
+    
+    // Botón siguiente
+    html += `
+        <button ${data.page === data.total_pages ? 'disabled' : ''} onclick="cargarMisTurnos(${data.page + 1})">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    html += `
+        <span class="pagination-info">
+            Página ${data.page} de ${data.total_pages} (${data.total} turnos)
+        </span>
+    `;
+    
+    container.innerHTML = html;
+}
 
 async function buscarTurnosPaciente() {
     const dni = document.getElementById('buscar-turnos-dni').value.trim();
@@ -899,8 +1141,12 @@ async function confirmarTurnoById(turnoId) {
         await api.confirmarTurno(turnoId);
         showToast('Turno confirmado', 'success');
 
-        // Recargar lista
-        await buscarTurnosPaciente();
+        // Recargar lista según contexto
+        if (misTurnosState.currentPage) {
+            await cargarMisTurnos();
+        } else {
+            await buscarTurnosPaciente();
+        }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     } finally {
@@ -918,8 +1164,12 @@ async function cancelarTurnoById(turnoId) {
         await api.cancelarTurno(turnoId);
         showToast('Turno cancelado', 'success');
 
-        // Recargar lista
-        await buscarTurnosPaciente();
+        // Recargar lista según contexto
+        if (misTurnosState.currentPage) {
+            await cargarMisTurnos();
+        } else {
+            await buscarTurnosPaciente();
+        }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     } finally {
@@ -930,7 +1180,7 @@ async function cancelarTurnoById(turnoId) {
 // Event listener para buscar turnos con Enter
 document.getElementById('buscar-turnos-dni').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-        buscarTurnosPaciente();
+        buscarTurnosPorDNI();
     }
 });
 
@@ -1120,6 +1370,14 @@ async function eliminarMedico(id, nombre) {
         hideLoading();
     }
 }
+
+// ============================================================
+// FUNCIONES GLOBALES
+// ============================================================
+
+window.toggleSidebar = toggleSidebar;
+window.cargarTodosTurnos = cargarTodosTurnos;
+window.buscarTurnosPorDNI = buscarTurnosPorDNI;
 
 // ============================================================
 // INICIALIZACIÓN

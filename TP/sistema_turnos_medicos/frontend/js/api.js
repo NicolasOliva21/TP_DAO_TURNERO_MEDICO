@@ -235,7 +235,113 @@ class APIClient {
             method: 'DELETE',
         });
     }
+
+    // ============================================================
+    // DISPONIBILIDADES (HORARIOS)
+    // ============================================================
+
+    async getDisponibilidades(medicoId) {
+        return this.request(`/medicos/${medicoId}/disponibilidades`);
+    }
+
+    async createDisponibilidad(medicoId, disponibilidadData) {
+        return this.request(`/medicos/${medicoId}/disponibilidades`, {
+            method: 'POST',
+            body: JSON.stringify(disponibilidadData),
+        });
+    }
+
+    async updateDisponibilidad(medicoId, disponibilidadId, updateData) {
+        return this.request(`/medicos/${medicoId}/disponibilidades/${disponibilidadId}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData),
+        });
+    }
+
+    async deleteDisponibilidad(medicoId, disponibilidadId) {
+        return this.request(`/medicos/${medicoId}/disponibilidades/${disponibilidadId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // ============================================================
+    // BLOQUEOS (VACACIONES, AUSENCIAS)
+    // ============================================================
+
+    async getBloqueos(medicoId, fechaDesde = null, fechaHasta = null) {
+        let url = `/medicos/${medicoId}/bloqueos`;
+        const params = new URLSearchParams();
+        
+        if (fechaDesde) params.append('fecha_desde', fechaDesde);
+        if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+        
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
+        
+        return this.request(url);
+    }
+
+    async createBloqueo(medicoId, bloqueoData) {
+        return this.request(`/medicos/${medicoId}/bloqueos`, {
+            method: 'POST',
+            body: JSON.stringify(bloqueoData),
+        });
+    }
+
+    async updateBloqueo(medicoId, bloqueoId, updateData) {
+        return this.request(`/medicos/${medicoId}/bloqueos/${bloqueoId}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData),
+        });
+    }
+
+    async deleteBloqueo(medicoId, bloqueoId) {
+        return this.request(`/medicos/${medicoId}/bloqueos/${bloqueoId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // ============================================================
+    // ESPECIALIDADES
+    // ============================================================
+
+    async getEspecialidades() {
+        return this.request('/especialidades/');
+    }
+
+    async createEspecialidad(especialidadData) {
+        return this.request('/especialidades/', {
+            method: 'POST',
+            body: JSON.stringify(especialidadData),
+        });
+    }
+
+    async updateEspecialidad(especialidadId, updateData) {
+        return this.request(`/especialidades/${especialidadId}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData),
+        });
+    }
+
+    async deleteEspecialidad(especialidadId) {
+        return this.request(`/especialidades/${especialidadId}`, {
+            method: 'DELETE',
+        });
+    }
 }
 
 // Instancia global del cliente API
 const api = new APIClient();
+
+// Funciones helper para acceso rápido
+const apiGetMedicos = () => api.getMedicos();
+const apiGetMedicosByEspecialidad = (especialidadId) => api.getMedicosByEspecialidad(especialidadId);
+const apiGetDisponibilidades = (medicoId) => api.getDisponibilidades(medicoId);
+const apiCreateDisponibilidad = (medicoId, data) => api.createDisponibilidad(medicoId, data);
+const apiUpdateDisponibilidad = (medicoId, id, data) => api.updateDisponibilidad(medicoId, id, data);
+const apiDeleteDisponibilidad = (medicoId, id) => api.deleteDisponibilidad(medicoId, id);
+const apiGetBloqueos = (medicoId, desde, hasta) => api.getBloqueos(medicoId, desde, hasta);
+const apiCreateBloqueo = (medicoId, data) => api.createBloqueo(medicoId, data);
+const apiUpdateBloqueo = (medicoId, id, data) => api.updateBloqueo(medicoId, id, data);
+const apiDeleteBloqueo = (medicoId, id) => api.deleteBloqueo(medicoId, id);

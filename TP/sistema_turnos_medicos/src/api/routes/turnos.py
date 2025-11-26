@@ -2,9 +2,10 @@
 Rutas para gestión de turnos.
 Endpoint principal del sistema.
 """
-from typing import List, Dict
+from typing import List, Dict, Any
 from datetime import datetime, timedelta, date
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel
 from src.api.schemas import (
     TurnoResponse, TurnoCreate, TurnoUpdate, 
     SuccessResponse, HorarioDisponibleResponse
@@ -15,6 +16,14 @@ from src.services.turno_service import TurnoService
 from src.utils.exceptions import *
 
 router = APIRouter(prefix="/turnos", tags=["Turnos"])
+
+
+class MisTurnosResponse(BaseModel):
+    turnos: List[TurnoResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
 
 @router.get("/", response_model=List[TurnoResponse])
@@ -169,26 +178,57 @@ def obtener_calendario_disponibilidad(
     dias: int = Query(14, description="Cantidad de días a mostrar desde hoy"),
     duracion: int = Query(30, description="Duración del turno en minutos"),
     uow: UnitOfWork = Depends(get_uow)
-) -> Dict[str, List[str]]:
+) -> Dict[str, Dict]:
     """
     Obtiene un calendario con todos los horarios disponibles del médico
-    para los próximos N días. Formato: {fecha: [horarios]}
+    para los próximos N días, indicando cuáles están bloqueados.
+    Formato: {fecha: {"horarios": [horarios], "bloqueado": bool, "motivo_bloqueo": str}}
     """
     try:
         turno_service = TurnoService(uow)
         calendario = {}
         fecha_actual = date.today()
         
+        # Obtener bloqueos del médico en el rango de fechas
+        fecha_fin = fecha_actual + timedelta(days=dias)
+        bloqueos = uow.bloqueos.get_por_medico(
+            medico_id=id_medico,
+            fecha_desde=fecha_actual,
+            fecha_hasta=fecha_fin
+        )
+        
         for i in range(dias):
             fecha = fecha_actual + timedelta(days=i)
+            fecha_str = fecha.isoformat()
+            
+            # Verificar si hay bloqueo para esta fecha
+            bloqueado = False
+            motivo_bloqueo = None
+            
+            for bloqueo in bloqueos:
+                # Verificar si la fecha cae dentro del bloqueo
+                if bloqueo.inicio.date() <= fecha <= bloqueo.fin.date():
+                    bloqueado = True
+                    motivo_bloqueo = bloqueo.motivo or "Médico no disponible"
+                    break
             
             try:
-                horarios = turno_service.obtener_horarios_disponibles(id_medico, fecha, duracion)
-                if horarios:
-                    # Convertir a string ISO format
-                    calendario[fecha.isoformat()] = [
-                        h.isoformat() for h in horarios
-                    ]
+                if bloqueado:
+                    # Si está bloqueado, no mostrar horarios pero indicar el bloqueo
+                    calendario[fecha_str] = {
+                        "horarios": [],
+                        "bloqueado": True,
+                        "motivo_bloqueo": motivo_bloqueo
+                    }
+                else:
+                    horarios = turno_service.obtener_horarios_disponibles(id_medico, fecha, duracion)
+                    if horarios:
+                        # Convertir a string ISO format
+                        calendario[fecha_str] = {
+                            "horarios": [h.isoformat() for h in horarios],
+                            "bloqueado": False,
+                            "motivo_bloqueo": None
+                        }
             except DisponibilidadException:
                 # El médico no atiende ese día
                 continue
@@ -371,6 +411,77 @@ def cancelar_turno(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al cancelar turno: {str(e)}"
         )
+
+
+@router.get("/mis-turnos/listar", response_model=MisTurnosResponse)
+def listar_mis_turnos(
+    dni: str = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(15, ge=1, le=100),
+    uow: UnitOfWork = Depends(get_uow)
+):
+    """
+    Lista todos los turnos no cancelados con paginación.
+    Si se proporciona DNI, filtra por paciente.
+    """
+    from sqlalchemy.orm import joinedload
+    from src.domain.turno import Turno
+    from src.domain.medico import Medico
+    
+    # Query base con eager loading
+    query = uow.session.query(Turno).options(
+        joinedload(Turno.paciente),
+        joinedload(Turno.medico).joinedload(Medico.especialidades),
+        joinedload(Turno.especialidad),
+        joinedload(Turno.estado)
+    )
+    
+    # Filtrar solo turnos activos y no cancelados
+    query = query.filter(Turno.activo == True)
+    
+    # Obtener estado cancelado
+    estado_cancelado = uow.estados_turno.get_by_codigo('cancelado')
+    if estado_cancelado:
+        query = query.filter(Turno.id_estado != estado_cancelado.id)
+    
+    # Filtrar por DNI si se proporciona
+    if dni:
+        paciente = uow.pacientes.get_by_dni(dni)
+        if paciente:
+            query = query.filter(Turno.id_paciente == paciente.id)
+        else:
+            # Si el DNI no existe, retornar vacío
+            return MisTurnosResponse(
+                turnos=[],
+                total=0,
+                page=page,
+                page_size=page_size,
+                total_pages=0
+            )
+    
+    # Ordenar por fecha descendente
+    query = query.order_by(Turno.fecha_hora.desc())
+    
+    # Contar total
+    total = query.count()
+    
+    # Aplicar paginación
+    offset = (page - 1) * page_size
+    turnos = query.offset(offset).limit(page_size).all()
+    
+    # Calcular total de páginas
+    total_pages = (total + page_size - 1) // page_size
+    
+    # Convertir a TurnoResponse
+    turnos_response = [TurnoResponse.model_validate(turno) for turno in turnos]
+    
+    return MisTurnosResponse(
+        turnos=turnos_response,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
 
 
 @router.delete("/{turno_id}", response_model=SuccessResponse)

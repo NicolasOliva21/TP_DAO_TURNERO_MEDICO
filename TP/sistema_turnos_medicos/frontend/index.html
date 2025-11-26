@@ -5,47 +5,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión de Turnos Médicos</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/styles.css?v=7">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-hospital"></i>
+                <span>Turnos Médicos</span>
+            </div>
+            <button class="sidebar-close" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="nav-btn active" data-page="home">
+                <i class="fas fa-home"></i>
+                <span>Inicio</span>
+            </button>
+            <button class="nav-btn" data-page="turnos">
+                <i class="fas fa-calendar-check"></i>
+                <span>Reservar Turno</span>
+            </button>
+            <button class="nav-btn" data-page="mis-turnos">
+                <i class="fas fa-list"></i>
+                <span>Mis Turnos</span>
+            </button>
+            <button class="nav-btn" data-page="pacientes">
+                <i class="fas fa-users"></i>
+                <span>Pacientes</span>
+            </button>
+            <button class="nav-btn" data-page="medicos">
+                <i class="fas fa-user-md"></i>
+                <span>Médicos</span>
+            </button>
+            <button class="nav-btn" data-page="especialidades">
+                <i class="fas fa-stethoscope"></i>
+                <span>Especialidades</span>
+            </button>
+            <button class="nav-btn" data-page="horarios">
+                <i class="fas fa-clock"></i>
+                <span>Horarios</span>
+            </button>
+            <button class="nav-btn" data-page="reportes">
+                <i class="fas fa-chart-bar"></i>
+                <span>Reportes</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
     <!-- Header -->
     <header class="header">
         <div class="container">
             <div class="header-content">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <div class="logo">
                     <i class="fas fa-hospital"></i>
                     <span>Sistema de Turnos Médicos</span>
                 </div>
-                <nav class="nav">
-                    <button class="nav-btn active" data-page="home">
-                        <i class="fas fa-home"></i>
-                        <span>Inicio</span>
-                    </button>
-                    <button class="nav-btn" data-page="turnos">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Reservar Turno</span>
-                    </button>
-                    <button class="nav-btn" data-page="mis-turnos">
-                        <i class="fas fa-list"></i>
-                        <span>Mis Turnos</span>
-                    </button>
-                    <button class="nav-btn" data-page="pacientes">
-                        <i class="fas fa-users"></i>
-                        <span>Pacientes</span>
-                    </button>
-                    <button class="nav-btn" data-page="medicos">
-                        <i class="fas fa-user-md"></i>
-                        <span>Médicos</span>
-                    </button>
-                    <button class="nav-btn" data-page="reportes">
-                        <i class="fas fa-chart-bar"></i>
-                        <span>Reportes</span>
-                    </button>
-                </nav>
             </div>
         </div>
     </header>
@@ -424,17 +451,42 @@
                 </div>
 
                 <div class="card">
-                    <div class="form-group">
-                        <label for="buscar-turnos-dni">Buscar turnos por DNI</label>
-                        <div class="input-with-button">
-                            <input type="text" id="buscar-turnos-dni" placeholder="Ingrese DNI del paciente">
-                            <button class="btn btn-primary" onclick="buscarTurnosPaciente()">
-                                <i class="fas fa-search"></i> Buscar
-                            </button>
+                    <div class="table-header">
+                        <div class="form-group" style="margin: 0; flex: 1; max-width: 400px;">
+                            <div class="input-with-button">
+                                <input type="text" id="buscar-turnos-dni" placeholder="Buscar por DNI del paciente">
+                                <button class="btn btn-primary" onclick="buscarTurnosPorDNI()">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                            </div>
                         </div>
+                        <button class="btn btn-secondary" onclick="cargarTodosTurnos()">
+                            <i class="fas fa-list"></i> Ver Todos
+                        </button>
                     </div>
 
-                    <div id="turnos-list" class="turnos-list">
+                    <div class="table-responsive">
+                        <table id="mis-turnos-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Paciente</th>
+                                    <th>DNI</th>
+                                    <th>Médico</th>
+                                    <th>Especialidad</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mis-turnos-tbody">
+                                <!-- Se carga dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="pagination" id="mis-turnos-pagination">
                         <!-- Se carga dinámicamente -->
                     </div>
                 </div>
@@ -682,6 +734,217 @@
                 </div>
             </div>
         </section>
+
+        <!-- Especialidades Page -->
+        <section id="especialidades-page" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1><i class="fas fa-stethoscope"></i> Gestión de Especialidades</h1>
+                    <p>Administre las especialidades médicas del sistema</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Especialidades Médicas</h3>
+                        <button id="btn-nueva-especialidad" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Nueva Especialidad
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="especialidades-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="especialidades-tbody">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modal Especialidad -->
+        <div id="modal-especialidad" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="especialidad-modal-titulo">Nueva Especialidad</h2>
+                    <button class="modal-close" onclick="cerrarModalEspecialidad()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="form-especialidad">
+                    <div class="form-group">
+                        <label for="especialidad-nombre">Nombre *</label>
+                        <input type="text" id="especialidad-nombre" required minlength="3" maxlength="100"
+                               placeholder="Ej: Cardiología, Pediatría">
+                    </div>
+                    <div class="form-group">
+                        <label for="especialidad-descripcion">Descripción</label>
+                        <textarea id="especialidad-descripcion" rows="3" maxlength="500"
+                                  placeholder="Descripción de la especialidad (opcional)"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalEspecialidad()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Horarios Page -->
+        <section id="horarios-page" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1><i class="fas fa-clock"></i> Gestión de Horarios y Disponibilidad</h1>
+                    <p>Asigne horarios semanales y gestione bloqueos de médicos</p>
+                </div>
+
+                <!-- Selector de Médico -->
+                <div class="card">
+                    <h3><i class="fas fa-user-md"></i> Seleccionar Médico</h3>
+                    <div class="form-group">
+                        <label for="medico-horarios-select">Médico</label>
+                        <select id="medico-horarios-select" class="form-control">
+                            <option value="">-- Seleccione un médico --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Sección Disponibilidades -->
+                <div id="seccion-disponibilidades" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-week"></i> Horarios Semanales</h3>
+                        <button id="btn-nueva-disponibilidad" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Agregar Horario
+                        </button>
+                    </div>
+                    <div id="disponibilidades-container">
+                        <p class="text-muted">Seleccione un médico para ver sus horarios</p>
+                    </div>
+                </div>
+
+                <!-- Sección Bloqueos -->
+                <div id="seccion-bloqueos" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h3><i class="fas fa-ban"></i> Bloqueos y Vacaciones</h3>
+                        <button id="btn-nuevo-bloqueo" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Agregar Bloqueo
+                        </button>
+                    </div>
+                    <div id="bloqueos-container">
+                        <p class="text-muted">Seleccione un médico para ver sus bloqueos</p>
+                    </div>
+                </div>
+
+                <!-- Modal Disponibilidad -->
+    <div id="modal-disponibilidad" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="disponibilidad-titulo">Agregar Horario</h2>
+                <button class="modal-close" onclick="cancelarFormularioDisponibilidad()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="form-disponibilidad">
+                <div class="form-group">
+                    <label for="disp-dia-semana">Día de la Semana *</label>
+                    <select id="disp-dia-semana" required>
+                        <option value="">-- Seleccione --</option>
+                        <option value="0">Domingo</option>
+                        <option value="1">Lunes</option>
+                        <option value="2">Martes</option>
+                        <option value="3">Miércoles</option>
+                        <option value="4">Jueves</option>
+                        <option value="5">Viernes</option>
+                        <option value="6">Sábado</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="disp-hora-desde">Hora Desde *</label>
+                        <input type="time" id="disp-hora-desde" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="disp-hora-hasta">Hora Hasta *</label>
+                        <input type="time" id="disp-hora-hasta" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="disp-duracion-slot">Duración del Turno (minutos) *</label>
+                    <select id="disp-duracion-slot" required>
+                        <option value="15">15 minutos</option>
+                        <option value="20">20 minutos</option>
+                        <option value="30" selected>30 minutos</option>
+                        <option value="45">45 minutos</option>
+                        <option value="60">60 minutos</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-cancelar-disponibilidad" class="btn btn-secondary" 
+                            onclick="cancelarFormularioDisponibilidad()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Bloqueo -->
+    <div id="modal-bloqueo" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="bloqueo-titulo">Agregar Bloqueo</h2>
+                <button class="modal-close" onclick="cancelarFormularioBloqueo()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="form-bloqueo">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bloqueo-inicio">Fecha de Inicio *</label>
+                        <input type="date" id="bloqueo-inicio" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bloqueo-fin">Fecha de Fin *</label>
+                        <input type="date" id="bloqueo-fin" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bloqueo-motivo">Motivo</label>
+                    <textarea id="bloqueo-motivo" rows="3" 
+                              placeholder="Ej: Vacaciones, Capacitación, etc."></textarea>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    El bloqueo será por días completos (de 00:00 a 23:59). No podrá crear bloqueos si existen turnos confirmados en ese período.
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-cancelar-bloqueo" class="btn btn-secondary" 
+                            onclick="cancelarFormularioBloqueo()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+            </div>
+        </section>
     </main>
 
     <!-- Loading Overlay -->
@@ -693,9 +956,11 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
-    <script src="/static/js/api.js"></script>
+    <script src="/static/js/api.js?v=6"></script>
     <script src="/static/js/reportes.js?v=2"></script>
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/especialidades.js?v=1"></script>
+    <script src="/static/js/horarios.js?v=4"></script>
+    <script src="/static/js/app.js?v=8"></script>
 </body>
 
 </html>
