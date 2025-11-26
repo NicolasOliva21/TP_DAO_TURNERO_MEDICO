@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/static/css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -39,6 +40,10 @@
                     <button class="nav-btn" data-page="medicos">
                         <i class="fas fa-user-md"></i>
                         <span>Médicos</span>
+                    </button>
+                    <button class="nav-btn" data-page="reportes">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Reportes</span>
                     </button>
                 </nav>
             </div>
@@ -299,7 +304,7 @@
                                 <h2>Seleccione Fecha y Horario</h2>
                                 <p>Haga clic en un horario disponible (en blanco) para reservar su turno</p>
                             </div>
-                            
+
                             <!-- Controles de navegación -->
                             <div class="calendario-controls">
                                 <button class="btn btn-sm btn-secondary" onclick="cambiarSemana(-1)">
@@ -470,6 +475,7 @@
                 </div>
             </div>
         </section>
+
         <!-- Medicos Page -->
         <section id="medicos-page" class="page">
             <div class="container">
@@ -555,6 +561,127 @@
                 </div>
             </div>
         </section>
+
+        <!-- Reportes Page -->
+        <section id="reportes-page" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1><i class="fas fa-chart-bar"></i> Reportes y Estadísticas</h1>
+                    <p>Visualización de métricas del sistema</p>
+                </div>
+
+                <div class="card">
+                    <div class="filters-section">
+                        <h3>Filtros Generales</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reporte-fecha-inicio">Fecha Inicio</label>
+                                <input type="date" id="reporte-fecha-inicio">
+                            </div>
+                            <div class="form-group">
+                                <label for="reporte-fecha-fin">Fecha Fin</label>
+                                <input type="date" id="reporte-fecha-fin">
+                            </div>
+                            <div class="form-group">
+                                <label for="reporte-medico-select">Médico</label>
+                                <select id="reporte-medico-select" class="form-control">
+                                    <option value="">Todos los médicos</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="reporte-especialidad-select">Especialidad</label>
+                                <select id="reporte-especialidad-select" class="form-control">
+                                    <option value="">Todas las especialidades</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="align-self: flex-end;">
+                                <button class="btn btn-primary" onclick="actualizarReportes()">
+                                    <i class="fas fa-sync"></i> Actualizar Reportes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="tab-asistencia">
+                            <i class="fas fa-chart-pie"></i> Asistencia
+                        </button>
+                        <button class="tab-btn" data-tab="tab-especialidad">
+                            <i class="fas fa-chart-bar"></i> Especialidades
+                        </button>
+                        <button class="tab-btn" data-tab="tab-medicos">
+                            <i class="fas fa-user-md"></i> Turnos por Médico
+                        </button>
+                        <button class="tab-btn" data-tab="tab-pacientes">
+                            <i class="fas fa-users"></i> Pacientes Atendidos
+                        </button>
+                    </div>
+
+                    <!-- Tab Asistencia -->
+                    <div class="tab-content active" id="tab-asistencia">
+                        <div class="chart-container"
+                            style="position: relative; height:40vh; width:80vw; max-width: 600px; margin: 0 auto;">
+                            <canvas id="chart-asistencia"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tab Especialidades -->
+                    <div class="tab-content" id="tab-especialidad">
+                        <div class="chart-container"
+                            style="position: relative; height:40vh; width:80vw; max-width: 800px; margin: 0 auto;">
+                            <canvas id="chart-especialidad"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tab Médicos -->
+                    <div class="tab-content" id="tab-medicos">
+                        <div class="table-responsive">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h4>Listado de Turnos</h4>
+                                <h5 id="total-turnos-medico" class="text-primary">Total: 0</h5>
+                            </div>
+                            <table id="reporte-medico-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha y Hora</th>
+                                        <th>Paciente</th>
+                                        <th>Especialidad</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reporte-medico-tbody">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab Pacientes -->
+                    <div class="tab-content" id="tab-pacientes">
+                        <div class="table-responsive">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h4>Listado de Pacientes</h4>
+                                <h5 id="total-pacientes-atendidos" class="text-primary">Total: 0</h5>
+                            </div>
+                            <table id="reporte-pacientes-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Paciente</th>
+                                        <th>DNI</th>
+                                        <th>Médico</th>
+                                        <th>Especialidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reporte-pacientes-tbody">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Loading Overlay -->
@@ -567,6 +694,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/reportes.js?v=2"></script>
     <script src="/static/js/app.js"></script>
 </body>
 

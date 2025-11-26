@@ -1,188 +1,268 @@
-# Sistema de Gestión de Turnos Médicos
+# Sistema de Gestión de Turnos Médicos 🏥
 
-## Descripción
-Sistema profesional de gestión de turnos médicos desarrollado con Python, aplicando principios SOLID, patrones de diseño y arquitectura en capas.
+Sistema profesional de gestión de turnos médicos desarrollado con Python, aplicando paradigma orientado a objetos, patrones de diseño y arquitectura en capas.
 
-## Características Principales
+**Universidad Nacional de Cuyo - Facultad de Ingeniería**  
+**Materia**: Diseño y Arquitectura Orientada a Objetos  
+**Grupo 42**: Oliva, Abadía, Giménez  
+**Año**: 2025
 
-### ✅ Programación Orientada a Objetos (POO)
-- Herencia, polimorfismo y encapsulación
-- Clases abstractas e interfaces
-- Type hints completos
+---
 
-### ✅ Patrones de Diseño Implementados
-- **Repository Pattern**: Abstracción de la capa de datos
-- **Unit of Work**: Gestión de transacciones
-- **Factory Pattern**: Creación de objetos complejos
-- **Singleton**: Gestión de configuración y conexión DB
-- **Strategy Pattern**: Diferentes estrategias de validación
-- **Observer Pattern**: Sistema de notificaciones y recordatorios
+## 📋 Descripción
 
-### ✅ Persistencia con SQLAlchemy ORM
-- Modelo relacional completo
-- Migraciones de base de datos
-- RelacionesMany-to-Many
-- Índices para optimización
+Sistema integral de gestión de turnos médicos que permite:
+- Gestión completa de pacientes, médicos y especialidades
+- Creación de turnos con validación anti-solapamiento
+- Control de disponibilidad y bloqueos de médicos
+- Historia clínica y recetas médicas
+- Seguimiento de estados de turnos
+- Recordatorios automáticos
+- **NUEVO**: Interfaz Web moderna y Reportes Estadísticos
 
-### ✅ Arquitectura en 3 Capas
-- **Presentación**: Interfaz de usuario con Rich
-- **Lógica de Negocio**: Servicios con validaciones complejas
-- **Datos**: Repositorios y acceso a BD
+## 🎯 Objetivos del Proyecto
 
-## Funcionalidades Principales
+✅ **Paradigma Orientado a Objetos**: Herencia, polimorfismo, encapsulación  
+✅ **Persistencia**: SQLAlchemy ORM 2.0 con SQLite  
+✅ **Patrones de Diseño**: Singleton, Repository, Unit of Work, Factory, Strategy  
+✅ **Arquitectura en Capas**: Separación clara de responsabilidades  
+✅ **Código Profesional**: Type hints, docstrings, manejo de excepciones  
 
-### 🏥 Gestión de Pacientes
-- Alta de pacientes con validación de datos únicos (DNI, email)
-- Validación de formato de email y fecha de nacimiento
-- Baja lógica (conserva historial médico)
-- Modificación de datos con control de integridad
-- Asociación con obras sociales
+## 🏗️ Arquitectura
 
-### 👨‍⚕️ Gestión de Médicos
-- Alta de profesionales con matrícula única
-- Asociación a múltiples especialidades
-- Configuración de horarios de atención
-- Baja lógica (conserva turnos pasados)
-- Validación de horarios sin superposición
-
-### 🏥 Gestión de Especialidades
-- ABM completo de especialidades médicas
-- Validación de nombres únicos
-- Control de eliminación (no permitir si hay médicos/turnos asociados)
-
-### 📅 Gestión de Turnos
-- Registro de turnos con validación anti-solape
-- Verificación de disponibilidad médica
-- Estados: Pendiente, Confirmado, Cancelado, Asistido, Inasistido
-- Modificación y cancelación con validaciones
-- Historial completo de turnos por paciente
-
-### 📋 Historia Clínica
-- Consultas médicas asociadas a turnos
-- Motivo, diagnóstico e indicaciones
-- Recetas electrónicas con firma digital
-- Items de receta detallados
-
-### 📊 Reportes y Estadísticas
-- Listado de turnos por médico y período
-- Cantidad de turnos por especialidad
-- Pacientes atendidos en rango de fechas
-- Gráfico de asistencias vs inasistencias
-
-### 🔔 Recordatorios Automáticos (Opcional)
-- Notificaciones por email
-- Envío automático 24h antes del turno
-- Control de turnos en estado Reservado
-
-## Arquitectura
+### Arquitectura en 3 Capas
 
 ```
-sistema_turnos_medicos/
-├── src/
-│   ├── domain/              # Entidades del dominio
-│   │   ├── paciente.py
-│   │   ├── medico.py
-│   │   ├── especialidad.py
-│   │   ├── turno.py
-│   │   ├── consulta.py
-│   │   ├── receta.py
-│   │   └── recordatorio.py
-│   ├── repositories/        # Capa de persistencia
-│   │   ├── base_repository.py
-│   │   ├── paciente_repository.py
-│   │   ├── medico_repository.py
-│   │   ├── turno_repository.py
-│   │   └── unit_of_work.py
-│   ├── services/            # Lógica de negocio
-│   │   ├── paciente_service.py
-│   │   ├── medico_service.py
-│   │   ├── turno_service.py
-│   │   └── reporte_service.py
-│   ├── ui/                  # Interfaz de usuario
-│   │   ├── paciente_menu.py
-│   │   ├── medico_menu.py
-│   │   ├── turno_menu.py
-│   │   └── reporte_menu.py
-│   ├── config/              # Configuración
-│   └── utils/               # Utilidades
-├── tests/                   # Tests unitarios
-├── data/                    # Base de datos
-└── main.py                  # Punto de entrada
+┌─────────────────────────────────────────┐
+│   CAPA DE PRESENTACIÓN (Frontend Web)   │
+│   - HTML5 / CSS3 / JavaScript           │
+│   - Single Page Application (SPA)       │
+│   - Gráficos con Chart.js               │
+├─────────────────────────────────────────┤
+│   CAPA DE API (Interface)               │
+│   - FastAPI REST API                    │
+│   - Endpoints tipados                   │
+├─────────────────────────────────────────┤
+│   CAPA DE LÓGICA DE NEGOCIO (Services)  │
+│   - TurnoService (anti-solapamiento)    │
+│   - Validaciones complejas              │
+│   - Reglas de negocio                   │
+├─────────────────────────────────────────┤
+│   CAPA DE ACCESO A DATOS (Repositories) │
+│   - Unit of Work Pattern                │
+│   - Repositorios específicos (10)       │
+│   - BaseRepository (CRUD genérico)      │
+├─────────────────────────────────────────┤
+│   CAPA DE DOMINIO (Domain)              │
+│   - 11 Entidades con SQLAlchemy         │
+│   - Relaciones Many-to-Many             │
+│   - Soft Delete + Audit Trail           │
+└─────────────────────────────────────────┘
+              ↓
+    [ SQLite Database ]
 ```
 
-## Modelo de Datos
+## 🎨 Patrones de Diseño Implementados
 
-El sistema gestiona:
-- **Pacientes**: Datos personales, obra social, historial
-- **Médicos**: Datos profesionales, matrícula, especialidades
-- **Especialidades**: Categorías médicas
-- **Turnos**: Reservas con validación anti-solape
-- **Consultas**: Historial clínico
-- **Recetas**: Prescripciones médicas electrónicas
-- **Recordatorios**: Notificaciones automáticas
-- **Disponibilidad**: Horarios de atención médica
-- **Bloqueos**: Períodos no disponibles
+### 1. **Singleton Pattern** ✅
+- **Ubicación**: `src/config/settings.py`, `src/repositories/database.py`
+- **Propósito**: Una única instancia de configuración y conexión DB
+- **Implementación**: Control de instanciación con `__new__`
 
-## Validaciones Implementadas
+### 2. **Repository Pattern** ✅
+- **Ubicación**: `src/repositories/`
+- **Propósito**: Abstracción del acceso a datos
+- **Implementación**:
+  - `BaseRepository`: CRUD genérico para todas las entidades
+  - 10 repositorios específicos con consultas personalizadas
 
-### Pacientes
-- ✅ DNI y email únicos
-- ✅ Formato de email válido
-- ✅ Fecha de nacimiento no futura
-- ✅ Campos obligatorios no vacíos
-- ✅ No baja si tiene turnos futuros
+### 3. **Unit of Work Pattern** ✅
+- **Ubicación**: `src/repositories/unit_of_work.py`
+- **Propósito**: Gestión transaccional y coordinación de repositorios
+- **Implementación**: Context manager con commit/rollback automático
 
-### Médicos
-- ✅ Matrícula profesional única
-- ✅ Horarios válidos (inicio < fin)
-- ✅ Al menos una especialidad asociada
-- ✅ No baja si tiene turnos pendientes
-- ✅ Validación de superposición de horarios
+### 4. **Factory Pattern** ✅
+- **Ubicación**: `src/services/turno_service.py`
+- **Propósito**: Creación compleja de turnos con validaciones
+- **Implementación**: Método factory con validación de 7 reglas de negocio
 
-### Turnos
-- ✅ Verificación de disponibilidad médica
-- ✅ Anti-solape de turnos (médico y paciente)
-- ✅ Fecha futura obligatoria
-- ✅ Control de estados (flujo de vida del turno)
-- ✅ Validación de duración
+### 5. **Strategy Pattern** ✅
+- **Ubicación**: Validaciones en servicios
+- **Propósito**: Diferentes estrategias de validación intercambiables
+- **Implementación**: Validadores de disponibilidad, solapamiento, etc.
 
-### Recetas
-- ✅ Solo para turnos atendidos
-- ✅ Firma digital del médico
-- ✅ Estados: Activa, Anulada, Expirada
+### 6. **Template Method Pattern** ✅
+- **Ubicación**: `src/repositories/base_repository.py`
+- **Propósito**: Definir estructura de operaciones CRUD
+- **Implementación**: Métodos comunes que repositorios heredan
 
-## Instalación
+## � Modelo de Dominio
+
+### Entidades Principales (11)
+
+1. **Paciente**: DNI único, email único, obra social
+2. **Medico**: Matrícula única, múltiples especialidades
+3. **Especialidad**: Categorización de servicios
+4. **EstadoTurno**: PEND, CONF, CANC, ASIS, INAS
+5. **Turno**: Entidad central con anti-solapamiento
+6. **DisponibilidadMedico**: Horarios semanales de atención
+7. **BloqueoMedico**: Vacaciones, capacitaciones
+8. **Consulta**: Historia clínica (1:1 con Turno ASIS)
+9. **Receta**: Prescripción médica con firma digital
+10. **ItemReceta**: Medicamentos de la receta
+11. **Recordatorio**: Notificaciones automáticas
+
+### Relaciones Clave
+
+- **Medico ↔ Especialidad**: Many-to-Many (tabla asociativa `medico_especialidad`)
+- **Turno → Paciente**: Many-to-One
+- **Turno → Medico**: Many-to-One
+- **Turno → Especialidad**: Many-to-One
+- **Turno → EstadoTurno**: Many-to-One
+- **Consulta → Turno**: One-to-One (solo turnos ASIS)
+- **Receta → Consulta**: Many-to-One
+
+## ✅ Validaciones Implementadas
+
+### Validaciones de Turnos (CRÍTICAS)
+
+1. ✅ **Fecha futura obligatoria**
+2. ✅ **Verificación de disponibilidad** del médico (día y horario)
+3. ✅ **Médico tiene la especialidad** seleccionada
+4. ✅ **Anti-solape para el mismo médico** (no dos turnos simultáneos)
+5. ✅ **Anti-solape para el mismo paciente** (no dos turnos simultáneos)
+6. ✅ **Control de bloqueos** del médico (vacaciones, etc.)
+7. ✅ **Estado inicial PEND** (Pendiente)
+
+### Otras Validaciones
+
+- **Paciente**: DNI único, email único y válido, fecha nacimiento no futura
+- **Médico**: Matrícula única, al menos una especialidad, DNI y email únicos
+- **Especialidad**: Nombre único
+- **Consulta**: Solo para turnos ASIS (Asistido)
+- **Receta**: Solo para consultas existentes, al menos un medicamento
+
+## 🚀 Instalación y Ejecución
+
+### Requisitos Previos
+
+- Python 3.10 o superior
+- pip (gestor de paquetes de Python)
+
+### Paso 1: Instalar Dependencias
 
 ```bash
-# Crear entorno virtual
-python -m venv venv
-
-# Activar entorno virtual
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# Instalar dependencias
 pip install -r requirements.txt
 ```
 
-## Uso
+### Paso 2: Ejecutar el Sistema
 
 ```bash
 python main.py
 ```
 
-## Tecnologías Utilizadas
+### Primera Ejecución
+
+Al ejecutar por primera vez, el sistema:
+1. ✅ Crea la base de datos SQLite en `data/turnos_medicos.db`
+2. ✅ Crea todas las tablas
+3. ✅ Inicializa estados de turno (PEND, CONF, CANC, ASIS, INAS)
+4. ✅ Carga datos de ejemplo:
+   - 5 Especialidades
+   - 3 Médicos con horarios
+   - 4 Pacientes
+
+## 📖 Uso del Sistema
+
+### Acceso Web
+
+Una vez iniciado el servidor, abre tu navegador en:
+**http://localhost:8000**
+
+### Funcionalidades Web
+
+1. **Gestión de Turnos**:
+   - Wizard paso a paso para reservar turnos.
+   - Selección de paciente, especialidad, médico y horario.
+   - Calendario visual de disponibilidad.
+
+2. **Gestión de Médicos**:
+   - ABM completo de médicos.
+   - Asignación de especialidades.
+
+3. **Reportes y Estadísticas**:
+   - Dashboard con gráficos interactivos.
+   - Filtros por fecha, médico y especialidad.
+   - Reportes de asistencia, especialidades, turnos y pacientes.
+
+## 📁 Estructura del Proyecto
+
+```
+sistema_turnos_medicos/
+├── frontend/                 # Frontend Web
+│   ├── index.html           # SPA Entry Point
+│   ├── static/
+│   │   ├── css/             # Estilos
+│   │   └── js/              # Lógica Frontend
+├── src/
+│   ├── api/                  # API REST (FastAPI)
+│   │   ├── routes/          # Endpoints
+│   │   └── main.py          # Configuración API
+│   ├── config/               # Configuración (Singleton)
+│   ├── domain/               # Entidades (11)
+│   ├── repositories/         # Acceso a datos
+│   ├── services/             # Lógica de negocio
+│   └── utils/                # Utilidades generales
+├── data/                     # Base de datos (generada)
+├── main.py                   # Punto de entrada
+├── requirements.txt          # Dependencias
+├── README.md                 # Este archivo
+├── ARQUITECTURA.md           # Documentación técnica
+└── GUIA_IMPLEMENTACION.md    # Guía de desarrollo
+```
+
+## 📚 Tecnologías Utilizadas
 
 - **Python 3.10+**: Lenguaje principal
+- **FastAPI**: Framework API REST de alto rendimiento
 - **SQLAlchemy 2.0**: ORM para persistencia
-- **Pydantic**: Validación de datos
-- **Rich**: Interfaz de usuario elegante en consola
-- **SQLite**: Base de datos (fácilmente migrable a PostgreSQL/MySQL)
+- **SQLite**: Base de datos relacional
+- **HTML5 / CSS3 / JavaScript**: Frontend Web
+- **Chart.js**: Visualización de datos
+- **Pydantic 2.5**: Validación de datos
+- **email-validator**: Validación de emails
+- **python-dateutil**: Manejo de fechas
 
-## Autores
-Grupo 42: Oliva, Abadía, Giménez
+## 🧪 Principios SOLID Aplicados
 
-## Fecha
-Noviembre 2025
+1. **S - Single Responsibility**: Cada clase tiene una única responsabilidad clara
+2. **O - Open/Closed**: Extensible mediante herencia (BaseRepository, BaseEntity)
+3. **L - Liskov Substitution**: Los repositorios derivados son intercambiables
+4. **I - Interface Segregation**: Interfaces específicas en servicios
+5. **D - Dependency Inversion**: Servicios dependen de abstracciones (repositories)
+
+## 📝 Documentación Adicional
+
+- **ARQUITECTURA.md**: Documentación técnica completa
+- **GUIA_IMPLEMENTACION.md**: Guía para extender el sistema
+- Docstrings completos en cada módulo
+- Type hints en todas las funciones
+
+## 👥 Autores
+
+**Grupo 42**
+- Oliva
+- Abadía
+- Giménez
+
+**Materia**: Diseño y Arquitectura Orientada a Objetos  
+**Institución**: Universidad Nacional de Cuyo - Facultad de Ingeniería  
+**Año**: 2025
+
+## 📄 Licencia
+
+Este proyecto es de uso académico para la Universidad Nacional de Cuyo.
+
+---
+
+**¡Gracias por revisar nuestro proyecto!** 🎉

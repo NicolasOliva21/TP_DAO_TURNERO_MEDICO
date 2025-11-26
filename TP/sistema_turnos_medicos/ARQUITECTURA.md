@@ -36,18 +36,17 @@
 
 ## ARQUITECTURA EN 3 CAPAS
 
-### Capa 1: Presentación (UI)
+### Capa 1: Presentación (Frontend Web)
 ```
-src/ui/
-├── main_menu.py              # Menú principal
-├── paciente_menu.py          # Gestión de pacientes
-├── medico_menu.py            # Gestión de médicos
-├── especialidad_menu.py      # Gestión de especialidades
-├── turno_menu.py             # Gestión de turnos
-├── consulta_menu.py          # Historia clínica
-├── receta_menu.py            # Recetas médicas
-├── reporte_menu.py           # Reportes y estadísticas
-└── ui_utils.py               # Utilidades de UI
+frontend/
+├── index.html                # Single Page Application
+├── static/
+│   ├── css/
+│   │   └── styles.css        # Estilos globales
+│   └── js/
+│       ├── app.js            # Lógica principal y routing
+│       ├── api.js            # Cliente API
+│       └── reportes.js       # Lógica específica de reportes
 ```
 
 ### Capa 2: Lógica de Negocio (Services)
@@ -345,18 +344,18 @@ El sistema crea automáticamente:
 ## EXTENSIBILIDAD
 
 El sistema está preparado para agregar:
+- [x] API REST (FastAPI)
+- [x] Frontend web (HTML/JS)
 - [ ] Autenticación y roles de usuario
 - [ ] Envío real de emails (SMTP)
-- [ ] API REST (FastAPI)
-- [ ] Frontend web (React/Vue)
 - [ ] Exportación de reportes a PDF/Excel
-- [ ] Dashboard con gráficos interactivos
+- [ ] Dashboard con gráficos interactivos (Implementado parcialmente en Reportes)
 - [ ] Integración con obras sociales
 - [ ] Firma digital de recetas con certificados
 - [ ] Telemedicina (videollamadas)
 
 ---
 
-**Autores**: Grupo 42 - Oliva, Abadía, Giménez  
+**Autores**: Grupo 42 - Oliva, Abadía, Giménez
 **Materia**: Diseño y Arquitectura Orientada a Objetos  
 **Fecha**: Noviembre 2025

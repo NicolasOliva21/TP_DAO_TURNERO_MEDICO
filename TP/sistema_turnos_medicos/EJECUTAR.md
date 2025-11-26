@@ -30,20 +30,22 @@
     
     Esto iniciará:
     - La API REST en el puerto 8000.
+    - El Frontend Web en `http://localhost:8000`. 
     - El planificador de recordatorios (Scheduler).
     - La base de datos (se creará automáticamente el archivo `turnos.db` y se cargarán datos de ejemplo).
 
-## Testing y Uso
+## Uso del Sistema
 
-1.  **Interfaz de Documentación (Swagger UI):**
-    - Abre tu navegador en: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
-    - Aquí puedes probar todos los endpoints (Crear médicos, turnos, pacientes, etc.).
+1.  **Acceso al Frontend Web:**
+    - Abre tu navegador en: [http://localhost:8000](http://localhost:8000)
+    - Verás la página de inicio con estadísticas generales.
 
-2.  **Frontend (Si está disponible):**
-    - Abre: [http://localhost:8000](http://localhost:8000)
+2.  **Documentación de API (Swagger UI):**
+    - Abre: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+    - Aquí puedes probar todos los endpoints directamente.
 
 3.  **Configuración de Email (Opcional):**
-    Para que el envío de correos funcione realmente, configura las variables de entorno antes de ejecutar:
+    Para que el envío de correos funcione realmente, configura las variables de entorno:
     - `SMTP_SERVER` (default: smtp.gmail.com)
     - `SMTP_PORT` (default: 587)
     - `SMTP_USER` (tu email)
@@ -56,24 +58,3 @@
     python main.py
     ```
 
-## Verificación de Funcionalidades Nuevas
-
-### 1. Gestión de Médicos (Frontend)
-1.  Abre [http://localhost:8000](http://localhost:8000).
-2.  Haz clic en el botón **"Médicos"** en la barra de navegación superior.
-3.  **Crear Médico**:
-    - Ve a la pestaña "Nuevo Médico".
-    - Completa el formulario (Matrícula, DNI, Nombre, etc.).
-    - Selecciona al menos una especialidad.
-    - Haz clic en "Registrar Médico".
-4.  **Listar y Eliminar**:
-    - Verás al nuevo médico en la pestaña "Listado".
-    - Puedes eliminarlo usando el botón rojo de basura.
-
-### 2. Recordatorios de Email
-- El sistema verifica automáticamente cada hora si hay turnos próximos (entre 23.5 y 24.5 horas en el futuro).
-- Para probarlo:
-    1.  Asegúrate de tener configuradas las variables de entorno SMTP.
-    2.  Crea un turno para mañana a esta misma hora (aprox).
-    3.  Espera a que el scheduler se ejecute (o reinicia la app para forzar el chequeo inicial).
-    4.  Deberías ver en la consola: `Se enviaron X recordatorios`.

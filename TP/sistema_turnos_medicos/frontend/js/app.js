@@ -57,6 +57,9 @@ function navigateTo(page) {
             loadMedicosTable();
             loadEspecialidadesCheckboxes();
             break;
+        case 'reportes':
+            actualizarReportes();
+            break;
     }
 }
 
@@ -483,11 +486,11 @@ async function cargarHorariosDisponibles() {
         // Obtener calendario completo del médico
         const calendario = await api.getCalendarioDisponibilidad(appState.medicoSeleccionado.id, 30, 30);
         calendarioState.horariosTodos = calendario;
-        
+
         console.log('Horarios disponibles cargados:', Object.keys(calendario).length, 'fechas');
         console.log('Fechas disponibles:', Object.keys(calendario));
         console.log('Muestra de horarios:', calendario);
-        
+
         // Mostrar la primera fecha con horarios
         const primeraFecha = Object.keys(calendario)[0];
         if (primeraFecha) {
@@ -539,28 +542,28 @@ function renderizarCalendarioSemanal() {
         console.error('ERROR: No se encontró el contenedor calendario-semanal');
         return;
     }
-    
+
     // Verificar que el container tenga la clase para el grid
     if (!container.classList.contains('calendario-semanal')) {
         container.classList.add('calendario-semanal');
         console.log('Clase calendario-semanal agregada al container');
     }
-    
+
     // FORZAR GRID con estilos inline como fallback
     container.style.display = 'grid';
     container.style.gridTemplateColumns = '80px repeat(7, 1fr)';
     container.style.minWidth = '800px';
-    
+
     container.innerHTML = '';
     console.log('Container limpiado - Grid forzado con estilos inline');
 
     // Calcular fechas de la semana
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    
+
     const inicioSemana = new Date(hoy);
     inicioSemana.setDate(hoy.getDate() + (calendarioState.semanaActual * 7));
-    
+
     // Ajustar al lunes de la semana
     const diaSemana = inicioSemana.getDay();
     const diferencia = diaSemana === 0 ? -6 : 1 - diaSemana;
@@ -580,7 +583,7 @@ function renderizarCalendarioSemanal() {
     const ultimoDia = diasSemana[6];
     const semanaTexto = document.getElementById('semana-texto');
     if (semanaTexto) {
-        semanaTexto.textContent = 
+        semanaTexto.textContent =
             `${primerDia.getDate()} ${primerDia.toLocaleDateString('es-AR', { month: 'short' })} - ${ultimoDia.getDate()} ${ultimoDia.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })}`;
     }
 
@@ -603,12 +606,12 @@ function renderizarCalendarioSemanal() {
     diasSemana.forEach((dia, index) => {
         const headerDia = document.createElement('div');
         headerDia.className = 'cal-header-dia';
-        
+
         const esHoy = dia.toDateString() === hoy.toDateString();
         if (esHoy) {
             headerDia.style.background = 'linear-gradient(135deg, #059669, #10b981)';
         }
-        
+
         headerDia.innerHTML = `
             <span class="cal-dia-nombre">${nombresDias[index]}</span>
             <span class="cal-dia-numero">${dia.getDate()}</span>
@@ -633,16 +636,16 @@ function renderizarCalendarioSemanal() {
             celda.className = 'cal-celda';
 
             const fechaStr = dia.toISOString().split('T')[0];
-            
+
             // Debug para el primer día y primera hora
             if (celdasCreadas === 0) {
                 console.log(`🔍 Primera celda - Día:`, dia, `fechaStr:`, fechaStr, `hora:`, hora);
                 console.log(`Buscando en calendarioState.horariosTodos['${fechaStr}']:`, calendarioState.horariosTodos[fechaStr]);
             }
-            
+
             // Buscar si hay horario disponible (hora es "08", "09", etc.)
             const horarioDisponible = buscarHorarioDisponible(fechaStr, hora);
-            
+
             // Buscar si hay turno ocupado
             const turnoOcupado = buscarTurnoOcupado(fechaStr, hora);
 
@@ -651,7 +654,7 @@ function renderizarCalendarioSemanal() {
                 const colores = ['', 'amarillo', 'verde', 'rosa'];
                 const colorAleatorio = colores[Math.floor(Math.random() * colores.length)];
                 celda.classList.add('ocupado', colorAleatorio);
-                
+
                 const horaTurno = new Date(turnoOcupado.fecha_hora);
                 celda.innerHTML = `
                     <div class="turno-info">
@@ -664,20 +667,20 @@ function renderizarCalendarioSemanal() {
                 // Celda disponible
                 celda.classList.add('disponible');
                 celda.dataset.horario = horarioDisponible;
-                
+
                 celda.addEventListener('click', () => {
                     // Desmarcar todas las celdas
                     document.querySelectorAll('.cal-celda').forEach(c => {
                         c.classList.remove('seleccionado');
                     });
-                    
+
                     // Marcar esta celda
                     celda.classList.add('seleccionado');
                     appState.horarioSeleccionado = horarioDisponible;
-                    
+
                     // Habilitar botón siguiente
                     document.getElementById('btn-step-4').disabled = false;
-                    
+
                     // Mostrar feedback
                     const fecha = new Date(horarioDisponible);
                     showToast(`Horario seleccionado: ${fecha.toLocaleString('es-AR')}`, 'success');
@@ -694,7 +697,7 @@ function renderizarCalendarioSemanal() {
             celdasCreadas++;
         });
     });
-    
+
     console.log(`=== CALENDARIO COMPLETADO: ${celdasCreadas} celdas creadas ===`);
 }
 
@@ -703,9 +706,9 @@ function buscarHorarioDisponible(fecha, hora) {
     if (!calendarioState.horariosTodos[fecha]) {
         return null;
     }
-    
+
     const horarios = calendarioState.horariosTodos[fecha];
-    
+
     // Buscar cualquier horario que comience con la hora especificada
     // Los timestamps vienen como "2025-11-24T08:00:00", "2025-11-24T08:30:00", etc.
     const horarioEncontrado = horarios.find(h => {
@@ -714,11 +717,11 @@ function buscarHorarioDisponible(fecha, hora) {
         const horaStr = h.substring(11, 13); // Posiciones 11-12 son la hora
         return horaStr === hora;
     });
-    
+
     if (fecha === '2025-11-24' && hora === '08' && horarioEncontrado) {
         console.log('✅ ENCONTRADO para', fecha, hora, ':', horarioEncontrado);
     }
-    
+
     return horarioEncontrado;
 }
 
@@ -727,7 +730,7 @@ function buscarTurnoOcupado(fecha, hora) {
         const fechaTurno = new Date(turno.fecha_hora);
         const fechaTurnoStr = fechaTurno.toISOString().split('T')[0];
         const horaTurnoStr = fechaTurno.getHours().toString().padStart(2, '0');
-        
+
         return fechaTurnoStr === fecha && horaTurnoStr === hora;
     });
 }

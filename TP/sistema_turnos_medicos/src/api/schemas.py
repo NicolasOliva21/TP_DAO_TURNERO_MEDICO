@@ -209,3 +209,29 @@ class SuccessResponse(BaseModel):
     """Esquema para respuestas exitosas."""
     message: str
     data: Optional[dict] = None
+
+
+# ============================================================
+# ESQUEMAS DE REPORTES
+# ============================================================
+
+class TurnoReporteResponse(BaseModel):
+    fecha_hora: str
+    paciente: str
+    especialidad: str
+    estado: str
+
+class EspecialidadReporteResponse(BaseModel):
+    especialidad: str
+    cantidad: int
+
+class PacienteReporteResponse(BaseModel):
+    fecha: str
+    paciente: str
+    dni: str
+    medico: str
+    especialidad: str
+
+class AsistenciaReporteResponse(BaseModel):
+    asistencias: int
+    inasistencias: int
